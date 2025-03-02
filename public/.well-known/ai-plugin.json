@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "https://one-inch-bitte-agent-csj4.vercel.app"
+            "url": "https://veax-bitte-agent.vercel.app"
         }
     ],
     "x-mb": {
