@@ -1,11 +1,11 @@
-# VEAX Node.js API for Bitte AI Plugin
+# Node.js API for Veax AI Agent
 
 ## Introduction
 
-The VEAX Node.js API for the Bitte AI Plugin enables seamless interaction between users and VEAX APIs through an AI-powered interface. This API supports a wide range of blockchain-related functionalities, including wallet balance fetching, portfolio management, transaction tracking, and real-time updates.
+Veax Assistant is an AI-powered agent designed to assist liquidity providers in optimizing their strategies on the **Veax Protocol**. It enables seamless interaction with Veax smart contracts and APIs, offering real-time insights, risk assessments, and automated liquidity provisioning.  
 
-[![Demo](https://img.shields.io/badge/Demo-Visit%20Demo-brightgreen)](https://tinyurl.com/one-inch-assistant)
-[![Deploy](https://img.shields.io/badge/Deploy-on%20Vercel-blue)](https://vercel.com/new/clone?repository-url=https://github.com/Teckas-Technologies/one-inch-bitte-agent)
+[![Demo](https://img.shields.io/badge/Demo-Visit%20Demo-brightgreen)](https://tinyurl.com/veax-assistant)
+[![Deploy](https://img.shields.io/badge/Deploy-on%20Vercel-blue)](https://vercel.com/new/clone?repository-url=https://github.com/Teckas-Technologies/veax-bitte-agent)
 
 **Tooling:**
 
@@ -19,105 +19,90 @@ The VEAX Node.js API for the Bitte AI Plugin enables seamless interaction betwee
 
 ## Key Features
 
-- **Wallet Balance Fetching**: Retrieve wallet balances, including detailed token information.
-- **Portfolio Management**: Analyze token holdings, profit/loss, and portfolio performance in real-time.
-- **Transaction Tracking**: Track orders and transactions by wallet address or specific order hash.
-- **Real-Time Updates**: Get instant updates on portfolio values and transaction statuses
+- **Fetch Liquidity Pools**: Retrieve real-time liquidity pool data, including token pairs and TVL (Total Value Locked).  
+- **Add Liquidity**: Add Liquidity to the pools.
+- **Risk Analysis**: Identify risky liquidity pools to help users avoid impermanent loss.  
+- **Best Pools Suggestions**: AI-driven recommendations for the best pools to add liquidity.  
+- **Historical Price Analysis**: Fetch historical token prices based on user-specified timeframes.  
+- **Real-Time Token Prices**: Retrieve spot prices of tokens from the market.  
+- **Automated Liquidity Provisioning**: Generate transactions to add liquidity directly from the assistant.  
+- **Fetch Tokens**: Retrieve all the tokens in the near protocol.
 
 ## User Flow
 
-1. **Fetch Wallet Balances:**  
-  Retrieve the user's wallet balances along with token details.
+### 1. Add Liquidity to a Pool  
+- **Endpoint**: `GET /api/add-liquidity`  
+- **Parameters**:  
+  - `tokenA` (string) – Token A address  
+  - `tokenB` (string) – Token B address  
+  - `walletAddress` (string) – User's NEAR wallet address  
+  - `amount` (string) – Amount of tokenA to add  
+- **Response**:  
+  - Returns transaction data for adding liquidity  
 
-    - **Endpoint**: GET /api/balance
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns an object containing the balances and token details.
+### 2. Fetch Tokens List  
+- **Endpoint**: `GET /api/tokens`  
+- **Parameters**:  
+  - `pageNo` (string) – Page number (default: 1)  
+  - `searchText` (string, optional) – Token address search  
+- **Response**:  
+  - Returns a list of tokens with price and liquidity details  
 
-2. **Fetch Orders from the Order Book:**  
-  Retrieve the list of orders for a user.
+### 3. Fetch Liquidity-Paired Tokens  
+- **Endpoint**: `GET /api/tokens/liquidity-paired`  
+- **Parameters**:  
+  - `tokenAddress` (string) – Address of the token  
+- **Response**:  
+  - Returns paired liquidity details  
 
-    - **Endpoint**: GET /api/orderbook
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns an array of orders linked to the wallet address.
+### 4. Fetch Current Token Price  
+- **Endpoint**: `GET /api/tokens/price`  
+- **Parameters**:  
+  - `tokenAddress` (string) – Address of the token  
+- **Response**:  
+  - Returns the current price of the token in USD  
 
-3. **Fetch Specific Order Details:**  
-  Retrieve details of a specific order using its hash.
+### 5. Fetch Historical Token Prices  
+- **Endpoint**: `GET /api/tokens/historical-price`  
+- **Parameters**:  
+  - `tokenAddress` (string) – Address of the token  
+  - `timestamp` (string) – Unix timestamp of the price lookup  
+- **Response**:  
+  - Returns historical price data  
 
-    - **Endpoint**: GET /api/orderbook/order
-    - **Parameters**:
-      - orderHash (string): The hash of the specific order.
-    - **Response**:
-      - Returns the details of the requested order.
+### 6. Fetch Liquidity Pools  
+- **Endpoint**: `GET /api/pools`  
+- **Parameters**:  
+  - `walletAddress` (string) – User's EVM wallet address  
+- **Response**:  
+  - Returns a list of available liquidity pools  
 
-4. **Fetch Order Events**  
-  Retrieve the status of an order (e.g., filled, canceled) using its hash.
+### 7. Fetch Spot Price of a Pool  
+- **Endpoint**: `GET /api/pools/spot-price`  
+- **Parameters**:  
+  - `tokenA` (string) – Address of token A  
+  - `tokenB` (string) – Address of token B  
+- **Response**:  
+  - Returns the spot price of the pool  
 
-    - **Endpoint**: GET /api/orderbook/events
-    - **Parameters**:
-      - orderHash (string): The hash of the specific order.
-    - **Response**:
-      - Returns an object containing event details for the order.
+### 8. Fetch Best Liquidity Pools  
+- **Endpoint**: `GET /api/pools/best-pools`  
+- **Response**:  
+  - Returns the top liquidity pools based on stability and liquidity  
 
-5. **Fetch Wallet History:**  
-  Retrieve the transaction history for a specific wallet address.
-
-    - **Endpoint**: GET /api/history
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns a list of transaction details for the given wallet address.
-
-6. **Fetch Token Holdings:**  
-  Retrieve the list of tokens held in the user's portfolio.
-
-    - **Endpoint**: GET /api/portfolio/holdings
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns an array of tokens currently held by the wallet address.
-
-7. **Fetch Portfolio Current Value:**  
-  Retrieve the current value of the user's portfolio in USD.
-
-    - **Endpoint**: GET /api/portfolio/current-value
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns the current total value of the portfolio in USD.
-
-8. **Fetch Supported Chains:**  
-  Retrieve the list of blockchain networks supported by the API.
-
-    - **Endpoint**: GET /api/portfolio/supported-chains
-    - **Response**:
-      - Returns an object containing the list of supported blockchain networks.
-
-9. **Analyze Portfolio Profit and Loss:**  
-  Retrieve an analysis of the user's portfolio, including profit/loss and ROI details.
-
-    - **Endpoint**: GET /api/portfolio/profit-and-loss
-    - **Parameters**:
-      - walletAddress (string): The EVM wallet address of the user.
-    - **Response**:
-      - Returns an object containing the profit/loss and ROI analysis for the user's portfolio.
-
-10. **Fetch Maker Orders:**  
-  Retrieve the list of orders created by a specific maker address.
-
-    - **Endpoint**: GET /api/fusion-order/maker-orders
-    - **Parameters**:
-      - makerAddress (string): The EVM wallet address of the maker.
-    - **Response**:
-      - Returns an object containing the list of orders created by the maker.
+### 9. Fetch Risky Liquidity Pools  
+- **Endpoint**: `GET /api/pools/risky-pools`  
+- **Response**:  
+  - Returns liquidity pools with high risk factors
 
 
-## Conclusion
+## Conclusion  
 
-The **Veax Node.js API for Bitte AI Plugin** acts as a powerful backend solution, facilitating smooth blockchain operations for users. By leveraging the Veax APIs and providing an AI-powered interface, this solution simplifies complex operations like wallet management, portfolio analysis, and transaction processing. Contributions and feedback from the community are welcome to enhance the functionality further.
+Veax Assistant is a powerful AI-driven tool designed to simplify liquidity provisioning on the Veax Protocol. By integrating real-time blockchain data, AI-powered insights, and seamless transaction execution, it helps liquidity providers optimize their strategies while minimizing risk.  
+
+With features like **best pool recommendations, risk assessment, real-time token prices, and automated liquidity provisioning**, Veax Assistant streamlines the entire liquidity management process.  
+
+Moving forward, we aim to **expand multi-chain support, introduce automated liquidity rebalancing, and enhance DeFi analytics** to make Veax Assistant the ultimate liquidity management tool in the decentralized finance space. 
 
 ## Step By Step
 
@@ -125,14 +110,16 @@ To get started with the Veax AI Agent, follow these steps:
 
 1. **Clone repository**
 ```bash
-git clone https://github.com/Teckas-Technologies/one-inch-bitte-agent
-cd one-inch-bitte-agent
+git clone https://github.com/Teckas-Technologies/veax-bitte-agent
+cd veax-bitte-agent
 ```
 2. **Install dependencies**
 ```bash
 npm install
 npm run start
 ```
+
+**Contract**: `veax.nea`  
 
 ## Usage
 
