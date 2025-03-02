@@ -13,9 +13,12 @@ router.get("/", async (req, res) => {
             return res.status(400).json({ error: "tokenA and tokenB are required" });
         }
 
+        // token_a: "wrap.near",
+        // token_b: "usdt.tether-token.near",
+
         const args = {
-            token_a: "wrap.near",
-            token_b: "usdt.tether-token.near",
+            token_a: tokenA,
+            token_b: tokenB,
             fee_rate: 32,
             position: {
                 amount_ranges: [
