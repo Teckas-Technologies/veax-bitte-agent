@@ -69,6 +69,15 @@
                             "type": "string"
                         },
                         "description": "The near wallet address of the user."
+                    },
+                    {
+                        "name": "amount",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The amount of the tokenA."
                     }
                 ],
                 "responses": {
@@ -140,55 +149,44 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
-                                            "type": "string",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
-                                            "type": "object",
-                                            "description": "Contains token details and total count",
-                                            "properties": {
-                                                "tokens": {
-                                                    "type": "array",
-                                                    "description": "List of tokens with details",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "sc_address": {
-                                                                "type": "string",
-                                                                "description": "Smart contract address of the token"
-                                                            },
-                                                            "price": {
-                                                                "type": "string",
-                                                                "description": "Current price of the token"
-                                                            },
-                                                            "price_change": {
-                                                                "type": "string",
-                                                                "description": "Percentage change in price"
-                                                            },
-                                                            "tvl": {
-                                                                "type": "string",
-                                                                "description": "Total value locked for the token"
-                                                            },
-                                                            "volume_24h": {
-                                                                "type": "string",
-                                                                "description": "Trading volume in the last 24 hours"
-                                                            },
-                                                            "volume_7d": {
-                                                                "type": "string",
-                                                                "description": "Trading volume in the last 7 days"
-                                                            }
-                                                        }
+                                        "tokens": {
+                                            "type": "array",
+                                            "description": "List of tokens with price and liquidity details",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "sc_address": {
+                                                        "type": "string",
+                                                        "description": "Smart contract address of the token"
+                                                    },
+                                                    "price": {
+                                                        "type": "string",
+                                                        "description": "Current price of the token"
+                                                    },
+                                                    "price_change": {
+                                                        "type": "string",
+                                                        "description": "Percentage change in price"
+                                                    },
+                                                    "tvl": {
+                                                        "type": "string",
+                                                        "description": "Total value locked (TVL) in the token"
+                                                    },
+                                                    "volume_24h": {
+                                                        "type": "string",
+                                                        "description": "Trading volume in the last 24 hours"
+                                                    },
+                                                    "volume_7d": {
+                                                        "type": "string",
+                                                        "description": "Trading volume in the last 7 days"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "description": "Full name of the token"
+                                                    },
+                                                    "symbol": {
+                                                        "type": "string",
+                                                        "description": "Ticker symbol of the token"
                                                     }
-                                                },
-                                                "total": {
-                                                    "type": "integer",
-                                                    "description": "Total number of tokens"
                                                 }
                                             }
                                         }
