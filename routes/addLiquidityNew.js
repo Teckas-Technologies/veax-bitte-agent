@@ -1,49 +1,23 @@
+// TODO In Testing....
+
 const express = require("express");
 const router = express.Router();
 const { format } = require("near-api-js").utils;
 const axios = require("axios");
-const { fetchTokenDecimals, parseTokenAmount } = require("../utils/utils");
+const { fetchTokenDecimals, parseTokenAmount, fetchMarketPrice } = require("../utils/utils");
 
 const VEAX_CONTRACT_ADDRESS = "veax.near";
 const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
 
-// Fetch market price using Veax API
-const fetchMarketPrice = async (tokenA, tokenB) => {
-    try {
-        const response = await axios.post(
-            VEAX_API_URL,
-            {
-                jsonrpc: "2.0",
-                id: "price-check",
-                method: "token_current_prices",
-                params: { token_addresses: [tokenA, tokenB] }
-            },
-            { headers: { Accept: "application/json", "Content-Type": "application/json" } }
-        );
-
-        const prices = response.data?.result?.prices || {};
-        if (!prices[tokenA] || !prices[tokenB]) {
-            throw new Error(`Price data not found for ${tokenA} or ${tokenB}`);
-        }
-
-        return prices[tokenA] / prices[tokenB]; // Convert `tokenA/tokenB` price
-    } catch (error) {
-        console.error("Error fetching market price:", error.message);
-        return 1; // Default to 1:1 if API request fails
-    }
-};
-
-// Convert price to tick index
 const priceToTick = (price) => Math.round(Math.log(price) / Math.log(1.0001));
 
-// Dynamic tick range calculation (5% volatility buffer)
 const calculateTickRange = async (tokenA, tokenB) => {
-    const price = await fetchMarketPrice(tokenA, tokenB);
-    const tickIndex = priceToTick(price);
+    const response = await fetchMarketPrice(tokenA, tokenB); // Get live price from API
+    const tickIndex = priceToTick(response.price);
 
-    const volatilityFactor = 10; // Higher means wider range (~5-10% from price)
-    const lowerTick = tickIndex - volatilityFactor;
-    const upperTick = tickIndex + volatilityFactor;
+    const buffer = 0.05; // 5% price range buffer
+    const lowerTick = priceToTick(response.price * (1 - buffer)); // 95% of current price
+    const upperTick = priceToTick(response.price * (1 + buffer)); // 105% of current price
 
     return [lowerTick, upperTick];
 };
@@ -65,7 +39,12 @@ router.get("/", async (req, res) => {
         const decimalsB = await fetchTokenDecimals(tokenB);
 
         // Fetch market price
-        const price = await fetchMarketPrice(tokenA, tokenB);
+        const response = await fetchMarketPrice(tokenA, tokenB);
+        if(!response.success) {
+            return res.status(400).json({ error: "Invalid token pair..." });
+        }
+
+        const price = response.price;
 
         console.log(`Market Price: 1 ${tokenA} = ${price} ${tokenB}`);
 
@@ -147,7 +126,7 @@ router.get("/", async (req, res) => {
                                                     { min: "0", max: parsedAmountA }, // TODO dynamic
                                                     { min: "0", max: parsedAmountB }  // TODO dynamic
                                                 ],
-                                                ticks_range: [-37, 43]  // TODO dynamic
+                                                ticks_range: tickRange // [-37, 43]  // TODO dynamic
                                             }
                                         }
                                     },

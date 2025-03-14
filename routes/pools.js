@@ -62,6 +62,42 @@ router.get("/", async (req, res) => {
     }
 });
 
+router.get("/by-tokens", async (req, res) => {
+    const { tokenA, tokenB } = req.query;
+
+    if (!tokenA || !tokenB) {
+        return res.status(400).json({ error: "tokenA and tokenB are required" });
+    }
+
+    try {
+        const response = await axios.post(
+            VEAX_API_URL,
+            {
+                jsonrpc: "2.0",
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                method: "liquidity_pool_by_token_pair",
+                params: {
+                    token_a: tokenA,
+                    token_b: tokenB
+                }
+            },
+            {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        console.log("RES: ", response.data)
+
+        return res.status(200).json(response.data);
+    } catch (error) {
+        console.error("Error fetching pools:", error.response?.data || error.message);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 router.get("/best-pools", async (req, res) => {
     try {
         const response = await axios.post(
@@ -84,7 +120,7 @@ router.get("/best-pools", async (req, res) => {
 
         console.log(bestPools[0], bestPools.length, riskyPools[0], riskyPools.length);
 
-        return res.status(200).json({ bestPools: bestPools});
+        return res.status(200).json({ bestPools: bestPools });
     } catch (error) {
         console.error("Error fetching pools:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
