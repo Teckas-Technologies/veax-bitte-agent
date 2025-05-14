@@ -22,7 +22,7 @@ const fetchTokenDecimals = async (tokenId) => {
         }
     } catch (error) {
         console.error(`Error fetching decimals for ${tokenId}:`, error.message);
-        return 0; // Default to 0 if unknown
+        return 24; // Default to 0 if unknown
     }
 };
 

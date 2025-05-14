@@ -132,22 +132,22 @@
                 "description": "Add liquidity to the pool specified by the user by giving tokenA and tokenB",
                 "parameters": [
                     {
-                        "name": "tokenA",
+                        "name": "tokenSymbolA",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenA"
+                        "description": "The token symbol for tokenA"
                     },
                     {
-                        "name": "tokenB",
+                        "name": "tokenSymbolB",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenB"
+                        "description": "The token symbol for tokenB"
                     },
                     {
                         "name": "walletAddress",
@@ -179,6 +179,22 @@
                                         "transactionData": {
                                             "type": "array",
                                             "description": "Array contains the transaction data."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
                                         }
                                     }
                                 }

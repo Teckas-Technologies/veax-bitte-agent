@@ -147,7 +147,7 @@ router.get("/", async (req, res) => {
                                                     { min: "0", max: parsedAmountA }, // TODO dynamic
                                                     { min: "0", max: parsedAmountB }  // TODO dynamic
                                                 ],
-                                                ticks_range: [-37, 43]  // TODO dynamic
+                                                ticks_range: [-37, 43]  // TODO dynamic (tick ranges - minTick, maxTick )
                                             }
                                         }
                                     },

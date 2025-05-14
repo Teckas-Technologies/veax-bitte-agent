@@ -15,7 +15,9 @@ const tokenRouter = require('./routes/tokens');
 const poolRouter = require('./routes/pools');
 const addLiquidityRouter = require('./routes/addLiquidity');
 const swapRouter = require('./routes/swap');
+// const doubleSwapRouter = require('./routes/doubleSwap');
 const positionRouter = require('./routes/liquidityPosition');
+const addLiquidityJOHNRouter = require('./routes/ownAddLiquidity');
 
 // const addLiquidityRouterNew = require('./routes/addLiquidityNew');
 // const { fetchTickAndAmountRanges, fetchMarketPrice, fetchHighLiquidityFeeLevel } = require('./utils/utils');
@@ -40,8 +42,9 @@ const positionRouter = require('./routes/liquidityPosition');
 
 app.use('/api/tokens', tokenRouter);
 app.use('/api/pools', poolRouter);
-app.use('/api/add-liquidity', addLiquidityRouter);
+app.use('/api/add-liquidity', addLiquidityJOHNRouter);
 app.use('/api/swap', swapRouter);
+// app.use('/api/double-swap', doubleSwapRouter);
 app.use('/api/positions', positionRouter);
 
 // app.use('/api/add-liquidity-new', addLiquidityRouterNew);
