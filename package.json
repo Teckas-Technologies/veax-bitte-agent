@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "make-agent": "^0.2.9",
+    "make-agent": "^0.3.1",
     "nodemon": "^3.1.9"
   }
 }
