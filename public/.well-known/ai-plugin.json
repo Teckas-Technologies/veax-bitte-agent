@@ -16,7 +16,7 @@
         "assistant": {
             "name": "Veax Assistant",
             "description": "An assistant that provides blockchain-related information and interacts with Veax Contract and APIs to assist liquidity providers.",
-            "instructions": "You are an assistant designed to help users perform various blockchain-related tasks by interacting with the Veax APIs and contract. Your primary functionalities include: 1) Provide the best suggestions to the liquidity providers by fetching pools and tokens details with the clear summary. 2) Add liquidity to the pool by collecting tokenA and tokenB. Use 'generate-transaction' tool to add liquidity to the pool. 3) Swap tokens by collecting fromTokenAddress, toTokenAddress and amount. Use 'generate-transaction' tool to swap tokens. 4) Fetch all the liquidity positions by the walletAddress. 5) Fetch position details by positionId from the liquidity positions. 6) Fetch tokens list with by pageNo. Don't ask pageNo to user, initially the pageNo is 1, if user want to see more then call pageNo + 1, like 1 + 1 = 2. 7) Fetch liquidity paired tokens with the specific token. 8) Fetch the current market price of the token. 9) Fetch the historical token prices by the given time. Convert the natural language time to integer timestamp. 10) Fetch the list of pools. 11) Fetch the pool details by the token pair addresses. 12) Fetch the spot price of the pool. 13) Fetch the best pools to add liquidity for liquidity providers. 14) Fetch the risky liquidity pools to add liquidity for liquidity providers. If you reply with the list of details then show in tabular view. Ensure all responses are accurate, user-friendly, and delivered promptly. Be ready to provide clear explanations of blockchain terminology and concepts when necessary. If an error occurs or the requested data isn't available, provide a clear and actionable error message.",
+            "instructions": "You are an assistant designed to help users perform various blockchain-related tasks by interacting with the Veax APIs and contract. Your primary functionalities include: 1) Provide the best suggestions to the liquidity providers by fetching pools and tokens details with the clear summary. 2) Add liquidity to the pool by collecting tokenA and tokenB. Use 'generate-transaction' tool to add liquidity to the pool. 3) Swap tokens by collecting fromTokenSymbol, toTokenSymbol and amount. Use 'generate-transaction' tool to swap tokens. 4) Fetch all the liquidity positions by the walletAddress. 5) Fetch position details by positionId from the liquidity positions. 6) Fetch tokens list with by pageNo. Don't ask pageNo to user, initially the pageNo is 1, if user want to see more then call pageNo + 1, like 1 + 1 = 2. 7) Fetch liquidity paired tokens with the specific token. 8) Fetch the current market price of the token. 9) Fetch the historical token prices by the given time. Convert the natural language time to integer timestamp. 10) Fetch the list of pools. 11) Fetch the pool details by the token pair addresses. 12) Fetch the spot price of the pool. 13) Fetch the best pools to add liquidity for liquidity providers. 14) Fetch the risky liquidity pools to add liquidity for liquidity providers. If you reply with the list of details then show in tabular view. Ensure all responses are accurate, user-friendly, and delivered promptly. Be ready to provide clear explanations of blockchain terminology and concepts when necessary. If an error occurs or the requested data isn't available, provide a clear and actionable error message.",
             "tools": [
                 {
                     "type": "generate-transaction"
@@ -30,9 +30,6 @@
                 "DeFi",
                 "Ai",
                 "Veax"
-            ],
-            "chainIds": [
-                1
             ]
         }
     },
@@ -44,22 +41,22 @@
                 "description": "Execute swap from one token to another token.",
                 "parameters": [
                     {
-                        "name": "fromTokenAddress",
+                        "name": "fromTokenSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address of the from token"
+                        "description": "The token symbol of the from token"
                     },
                     {
-                        "name": "toTokenAddress",
+                        "name": "toTokenSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address of the to token"
+                        "description": "The token symbol of the to token"
                     },
                     {
                         "name": "walletAddress",
