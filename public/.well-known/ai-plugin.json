@@ -16,7 +16,7 @@
         "assistant": {
             "name": "Veax Assistant",
             "description": "An assistant that provides blockchain-related information and interacts with Veax Contract and APIs to assist liquidity providers.",
-            "instructions": "You are an assistant designed to help users perform various blockchain-related tasks by interacting with the Veax APIs and contract. Your primary functionalities include: 1) Provide the best suggestions to the liquidity providers by fetching pools and tokens details with the clear summary. 2) Add liquidity to the pool by collecting tokenA and tokenB. Use 'generate-transaction' tool to add liquidity to the pool. 3) Swap tokens by collecting fromTokenSymbol, toTokenSymbol and amount. Use 'generate-transaction' tool to swap tokens. 4) Fetch all the liquidity positions by the walletAddress. 5) Fetch position details by positionId from the liquidity positions. 6) Fetch tokens list with by pageNo. Don't ask pageNo to user, initially the pageNo is 1, if user want to see more then call pageNo + 1, like 1 + 1 = 2. 7) Fetch liquidity paired tokens with the specific token. 8) Fetch the current market price of the token. 9) Fetch the historical token prices by the given time. Convert the natural language time to integer timestamp. 10) Fetch the list of pools. 11) Fetch the pool details by the token pair addresses. 12) Fetch the spot price of the pool. 13) Fetch the best pools to add liquidity for liquidity providers. 14) Fetch the risky liquidity pools to add liquidity for liquidity providers. If you reply with the list of details then show in tabular view. Ensure all responses are accurate, user-friendly, and delivered promptly. Be ready to provide clear explanations of blockchain terminology and concepts when necessary. If an error occurs or the requested data isn't available, provide a clear and actionable error message.",
+            "instructions": "You are an assistant designed to help users perform various blockchain-related tasks by interacting with the Veax APIs and contract. Your primary functionalities include: 1) Provide the best suggestions to the liquidity providers by fetching pools and tokens details with the clear summary. 2) Add liquidity to the pool by collecting tokenA and tokenB. Use 'generate-transaction' tool to add liquidity to the pool. 3) Swap tokens by collecting fromTokenSymbol, toTokenSymbol and amount. Use 'generate-transaction' tool to swap tokens. 4) Fetch all the liquidity positions by the walletAddress. 5) Fetch position details by positionId from the liquidity positions. 6) Fetch tokens list with by pageNo. Don't ask pageNo to user, initially the pageNo is 1, if user want to see more then call pageNo + 1, like 1 + 1 = 2. 7) Fetch liquidity paired tokens with the specific token. 8) Fetch the current market price of the token. 9) Fetch the historical token prices by the given time. Convert the natural language time to integer timestamp. 10) Fetch the token balance by the token symbol. 11) Fetch the list of pools. 12) Fetch the pool details by the tokens symbol paired in the pool. 13) Fetch the spot price of the pool. 14) Fetch the best pools to add liquidity for liquidity providers. 15) Fetch the risky liquidity pools to add liquidity for liquidity providers. If you reply with the list of details then show in tabular view. Don't show the token addresses to the user, If user wants to know the token address then only show it. Show only 4 digit after the floating point (Don't show like eg:1.2551e+26). Ensure all responses are accurate, user-friendly, and delivered promptly. Be ready to provide clear explanations of blockchain terminology and concepts when necessary. ",
             "tools": [
                 {
                     "type": "generate-transaction"
@@ -301,7 +301,7 @@
                                                                         },
                                                                         "code": {
                                                                             "type": "string",
-                                                                            "description": "Token symbol"
+                                                                            "description": "The symbol of the token"
                                                                         }
                                                                     }
                                                                 }
@@ -564,37 +564,13 @@
                                             "items": {
                                                 "type": "object",
                                                 "properties": {
-                                                    "sc_address": {
-                                                        "type": "string",
-                                                        "description": "Smart contract address of the token"
-                                                    },
-                                                    "price": {
-                                                        "type": "string",
-                                                        "description": "Current price of the token"
-                                                    },
-                                                    "price_change": {
-                                                        "type": "string",
-                                                        "description": "Percentage change in price"
-                                                    },
-                                                    "tvl": {
-                                                        "type": "string",
-                                                        "description": "Total value locked (TVL) in the token"
-                                                    },
-                                                    "volume_24h": {
-                                                        "type": "string",
-                                                        "description": "Trading volume in the last 24 hours"
-                                                    },
-                                                    "volume_7d": {
-                                                        "type": "string",
-                                                        "description": "Trading volume in the last 7 days"
-                                                    },
                                                     "name": {
                                                         "type": "string",
                                                         "description": "Full name of the token"
                                                     },
                                                     "symbol": {
                                                         "type": "string",
-                                                        "description": "Ticker symbol of the token"
+                                                        "description": "The symbol of the token"
                                                     }
                                                 }
                                             }
@@ -630,13 +606,13 @@
                 "description": "Fetch the liquidities paired with the specific token.",
                 "parameters": [
                     {
-                        "name": "tokenAddress",
+                        "name": "tokenSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The address of the token."
+                        "description": "The symbol of the token."
                     }
                 ],
                 "responses": {
@@ -666,6 +642,14 @@
                                                     "items": {
                                                         "type": "object",
                                                         "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "description": "Full name of the token"
+                                                            },
+                                                            "symbol": {
+                                                                "type": "string",
+                                                                "description": "The symbol of the token"
+                                                            },
                                                             "address": {
                                                                 "type": "string",
                                                                 "description": "Token contract address"
@@ -710,13 +694,13 @@
                 "description": "Fetch the price of the token in USD. ",
                 "parameters": [
                     {
-                        "name": "tokenAddress",
+                        "name": "tokenSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The address of the token."
+                        "description": "The symbol of the token."
                     }
                 ],
                 "responses": {
@@ -781,13 +765,13 @@
                 "description": "Fetch the previous token price by the given time",
                 "parameters": [
                     {
-                        "name": "tokenAddress",
+                        "name": "tokenSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The address of the token."
+                        "description": "The symbol of the token."
                     },
                     {
                         "name": "timestamp",
@@ -899,31 +883,39 @@
                                                         "properties": {
                                                             "token_a": {
                                                                 "type": "string",
-                                                                "description": "Address of the first token in the pool"
+                                                                "description": "Symbol of the first token in the pool"
+                                                            },
+                                                            "token_a_sc_address": {
+                                                                "type": "string",
+                                                                "description": "Smart contract address of token A"
+                                                            },
+                                                            "token_a_decimals": {
+                                                                "type": "integer",
+                                                                "description": "Decimals for token A"
                                                             },
                                                             "token_b": {
                                                                 "type": "string",
-                                                                "description": "Address of the second token in the pool"
+                                                                "description": "Symbol of the second token in the pool"
                                                             },
-                                                            "reserve_a": {
+                                                            "token_b_sc_address": {
                                                                 "type": "string",
-                                                                "description": "Reserve amount of token A in the pool"
+                                                                "description": "Smart contract address of token B"
                                                             },
-                                                            "reserve_b": {
-                                                                "type": "string",
-                                                                "description": "Reserve amount of token B in the pool"
+                                                            "token_b_decimals": {
+                                                                "type": "integer",
+                                                                "description": "Decimals for token B"
                                                             },
                                                             "spot_price": {
                                                                 "type": "string",
-                                                                "description": "Current spot price of token A relative to token B"
+                                                                "description": "Spot price of token A relative to token B"
                                                             },
-                                                            "liquidities": {
-                                                                "type": "array",
-                                                                "description": "List of liquidity values in the pool",
-                                                                "items": {
-                                                                    "type": "string",
-                                                                    "description": "Liquidity value"
-                                                                }
+                                                            "stability": {
+                                                                "type": "number",
+                                                                "description": "Stability metric of the pool"
+                                                            },
+                                                            "total_liquidity": {
+                                                                "type": "number",
+                                                                "description": "Total liquidity in the pool"
                                                             }
                                                         }
                                                     }
@@ -961,22 +953,22 @@
                 "description": "Fetch the pool details by the token pair addresses",
                 "parameters": [
                     {
-                        "name": "tokenA",
+                        "name": "tokenASymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenA"
+                        "description": "The symbol of the tokenA"
                     },
                     {
-                        "name": "tokenB",
+                        "name": "tokenBSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenB"
+                        "description": "The symbol of the tokenB"
                     }
                 ],
                 "responses": {
@@ -1148,22 +1140,22 @@
                 "description": "Fetch the spot price of the pool",
                 "parameters": [
                     {
-                        "name": "tokenA",
+                        "name": "tokenASymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenA"
+                        "description": "The symbol of the tokenA"
                     },
                     {
-                        "name": "tokenB",
+                        "name": "tokenBSymbol",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The token address for tokenB"
+                        "description": "The symbol of the tokenB"
                     }
                 ],
                 "responses": {
@@ -1246,39 +1238,39 @@
                                                 "properties": {
                                                     "token_a": {
                                                         "type": "string",
-                                                        "description": "Address of the first token in the pool"
+                                                        "description": "Symbol of the first token in the pool"
+                                                    },
+                                                    "token_a_sc_address": {
+                                                        "type": "string",
+                                                        "description": "Smart contract address of token A"
+                                                    },
+                                                    "token_a_decimals": {
+                                                        "type": "integer",
+                                                        "description": "Decimals for token A"
                                                     },
                                                     "token_b": {
                                                         "type": "string",
-                                                        "description": "Address of the second token in the pool"
+                                                        "description": "Symbol of the second token in the pool"
                                                     },
-                                                    "reserve_a": {
+                                                    "token_b_sc_address": {
                                                         "type": "string",
-                                                        "description": "Reserve amount of token A in the pool"
+                                                        "description": "Smart contract address of token B"
                                                     },
-                                                    "reserve_b": {
-                                                        "type": "string",
-                                                        "description": "Reserve amount of token B in the pool"
+                                                    "token_b_decimals": {
+                                                        "type": "integer",
+                                                        "description": "Decimals for token B"
                                                     },
                                                     "spot_price": {
                                                         "type": "string",
-                                                        "description": "Current spot price of token A relative to token B"
-                                                    },
-                                                    "liquidities": {
-                                                        "type": "array",
-                                                        "description": "List of liquidity values in the pool",
-                                                        "items": {
-                                                            "type": "string",
-                                                            "description": "Liquidity value"
-                                                        }
-                                                    },
-                                                    "totalLiquidity": {
-                                                        "type": "number",
-                                                        "description": "Total liquidity available in the pool"
+                                                        "description": "Spot price of token A relative to token B"
                                                     },
                                                     "stability": {
                                                         "type": "number",
-                                                        "description": "Stability factor of the pool"
+                                                        "description": "Stability metric of the pool"
+                                                    },
+                                                    "total_liquidity": {
+                                                        "type": "number",
+                                                        "description": "Total liquidity in the pool"
                                                     }
                                                 }
                                             }
@@ -1328,39 +1320,39 @@
                                                 "properties": {
                                                     "token_a": {
                                                         "type": "string",
-                                                        "description": "Address of the first token in the risky pool"
+                                                        "description": "Symbol of the first token in the pool"
+                                                    },
+                                                    "token_a_sc_address": {
+                                                        "type": "string",
+                                                        "description": "Smart contract address of token A"
+                                                    },
+                                                    "token_a_decimals": {
+                                                        "type": "integer",
+                                                        "description": "Decimals for token A"
                                                     },
                                                     "token_b": {
                                                         "type": "string",
-                                                        "description": "Address of the second token in the risky pool"
+                                                        "description": "Symbol of the second token in the pool"
                                                     },
-                                                    "reserve_a": {
+                                                    "token_b_sc_address": {
                                                         "type": "string",
-                                                        "description": "Reserve amount of token A in the pool"
+                                                        "description": "Smart contract address of token B"
                                                     },
-                                                    "reserve_b": {
-                                                        "type": "string",
-                                                        "description": "Reserve amount of token B in the pool"
+                                                    "token_b_decimals": {
+                                                        "type": "integer",
+                                                        "description": "Decimals for token B"
                                                     },
                                                     "spot_price": {
                                                         "type": "string",
-                                                        "description": "Current spot price of token A relative to token B"
-                                                    },
-                                                    "liquidities": {
-                                                        "type": "array",
-                                                        "description": "List of liquidity values in the pool",
-                                                        "items": {
-                                                            "type": "string",
-                                                            "description": "Liquidity value"
-                                                        }
-                                                    },
-                                                    "totalLiquidity": {
-                                                        "type": "number",
-                                                        "description": "Total liquidity available in the risky pool"
+                                                        "description": "Spot price of token A relative to token B"
                                                     },
                                                     "stability": {
                                                         "type": "number",
-                                                        "description": "Stability factor of the risky pool"
+                                                        "description": "Stability metric of the pool"
+                                                    },
+                                                    "total_liquidity": {
+                                                        "type": "number",
+                                                        "description": "Total liquidity in the pool"
                                                     }
                                                 }
                                             }
@@ -1392,9 +1384,18 @@
         "/api/balance": {
             "get": {
                 "operationId": "getBalance",
-                "summary": "Fetch the user's wallet balances",
-                "description": "Fetch the user's wallet balance details ",
+                "summary": "Fetch the user's wallet balance by token symbol",
+                "description": "Fetch the user's wallet balance by token symbol ",
                 "parameters": [
+                    {
+                        "name": "tokenSymbol",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The symbol of the token."
+                    },
                     {
                         "name": "walletAddress",
                         "in": "query",
@@ -1402,7 +1403,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "The evm wallet address of the user."
+                        "description": "The near wallet address of the user."
                     }
                 ],
                 "responses": {
@@ -1413,9 +1414,9 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "balances": {
-                                            "type": "object",
-                                            "description": "Fetch balace details of the user with the token details"
+                                        "balance": {
+                                            "type": "string",
+                                            "description": "Human-readable balance string (e.g., in token units)"
                                         }
                                     }
                                 }

@@ -1,58 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const { format } = require("near-api-js").utils;
-const axios = require("axios");
-const { fetchTokenDecimals, parseTokenAmount } = require("../utils/utils");
+const { parseTokenAmount } = require("../utils/utils");
+const { getPoolSpotPrice, getLiquidityPercentPerLevel, getPoolLeverage } = require("../rpc-utils/addLiquidity");
+const { formatSlippage, calculateEqualTicks } = require("../utils/liquidityUtils");
+const { estimateLiquidityPosition } = require("../rpc-utils/estimation");
+const { getAllTokenMetadata } = require("../rpc-utils/token");
+const { getFTBalance } = require("../rpc-utils/account");
 
 const VEAX_CONTRACT_ADDRESS = "veax.near";
-const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
-
-// Fetch market price using Veax API
-const fetchMarketPrice = async (tokenA, tokenB) => {
-    try {
-        const response = await axios.post(
-            VEAX_API_URL,
-            {
-                jsonrpc: "2.0",
-                id: "price-check",
-                method: "token_current_prices",
-                params: { token_addresses: [tokenA, tokenB] }
-            },
-            { headers: { Accept: "application/json", "Content-Type": "application/json" } }
-        );
-
-        const prices = response.data?.result?.prices || {};
-        if (!prices[tokenA] || !prices[tokenB]) {
-            throw new Error(`Price data not found for ${tokenA} or ${tokenB}`);
-        }
-
-        return prices[tokenA] / prices[tokenB]; // Convert `tokenA/tokenB` price
-    } catch (error) {
-        console.error("Error fetching market price:", error.message);
-        return 1; // Default to 1:1 if API request fails
-    }
-};
-
-// Convert price to tick index
-const priceToTick = (price) => Math.round(Math.log(price) / Math.log(1.0001));
-
-// Dynamic tick range calculation (5% volatility buffer)
-const calculateTickRange = async (tokenA, tokenB) => {
-    const price = await fetchMarketPrice(tokenA, tokenB);
-    const tickIndex = priceToTick(price);
-
-    const volatilityFactor = 10; // Higher means wider range (~5-10% from price)
-    const lowerTick = tickIndex - volatilityFactor;
-    const upperTick = tickIndex + volatilityFactor;
-
-    return [lowerTick, upperTick];
-};
 
 router.get("/", async (req, res) => {
     try {
-        const { tokenA, tokenB, walletAddress, amount } = req.query;
+        const { tokenSymbolA, tokenSymbolB, walletAddress, amount } = req.query;
 
-        if (!tokenA || !tokenB) {
+        if (!tokenSymbolA || !tokenSymbolB) {
             return res.status(400).json({ error: "tokenA and tokenB are required" });
         }
 
@@ -60,27 +22,91 @@ router.get("/", async (req, res) => {
             return res.status(400).json({ error: "walletAddress and amount are required" });
         }
 
-        // Fetch token decimals
-        const decimalsA = await fetchTokenDecimals(tokenA);
-        const decimalsB = await fetchTokenDecimals(tokenB);
+        const tokens = await getAllTokenMetadata() || [];
 
-        // Fetch market price
-        const price = await fetchMarketPrice(tokenA, tokenB);
+        // Find tokens by symbol
+        const tokenAData = tokens.find(token => token.symbol?.toLowerCase() === tokenSymbolA.toLowerCase());
+        const tokenBData = tokens.find(token => token.symbol?.toLowerCase() === tokenSymbolB.toLowerCase());
 
-        console.log(`Market Price: 1 ${tokenA} = ${price} ${tokenB}`);
+        // Validate existence
+        if (!tokenAData || !tokenBData) {
+            return res.status(400).json({
+                error: `Could not find tokens for symbols: ${!tokenAData ? tokenSymbolA : ''} ${!tokenBData ? tokenSymbolB : ''}`
+            });
+        }
 
-        // Convert tokenA amount to tokenB equivalent
-        const tokenAAmount = parseFloat(amount);
-        const tokenBAmount = tokenAAmount * price;
+        const tokenA = tokenAData.sc_address;
+        const tokenB = tokenBData.sc_address;
+
+        console.log("Token A Address:", tokenA);
+        console.log("Token B Address:", tokenB);
+
+        const result = await getPoolSpotPrice(tokenA, tokenB);
+
+        // if (!result.pool_exist) {
+        //     return res.status(400).json({ error: "Pool doesn't exist." });
+        // }
+
+        const slippage = await formatSlippage("0.5");
+
+        const feeLevelResult = await getLiquidityPercentPerLevel(tokenA, tokenB);
+        const percents = feeLevelResult.percents;
+
+        const feeLevels = [1, 2, 4, 8, 16, 32, 64, 128];
+        const maxIndex = percents.indexOf(Math.max(...percents));
+
+        const feeRate = feeLevels[maxIndex];
+        let price = result.prices[maxIndex];  // spot price
+
+        if (!result.pool_exist) {
+            price = '1'
+        }
+
+        const leverageResult = await getPoolLeverage(tokenA, tokenB);
+
+        let leverage = 1000;
+        if (maxIndex !== -1) {
+            leverage = leverageResult?.leverages[maxIndex];
+        }
+
+        const { minTick, maxTick } = await calculateEqualTicks({ aDecimals: tokenBData?.decimals, bDecimals: tokenAData?.decimals, price: price, leverage });
+
+        console.log("TICKS: ", minTick, maxTick)
+
+        const estimation = await estimateLiquidityPosition({ tokenB, tokenA, slippageTolerance: slippage, feeRate, lowerTick: minTick, upperTick: maxTick, amount, price, poolExist: result?.pool_exist });
+
+        // console.log("Estimation: ", estimation);
+
+        if (!estimation) {
+            return res.status(400).json({ error: "Add liquidity estimation has been failed" });
+        }
+
+        const { min_token_a, min_token_b, max_token_a, max_token_b } = estimation;
 
         // Convert to Yocto format
-        const parsedAmountA = parseTokenAmount(tokenAAmount, decimalsA);
-        const parsedAmountB = parseTokenAmount(tokenBAmount, decimalsB);
+        const maxAmountA = parseTokenAmount(max_token_a, tokenAData?.decimals);
+        const maxAmountB = parseTokenAmount(max_token_b, tokenBData?.decimals);
 
-        console.log(`Converted Amounts: A=${parsedAmountA} (Yocto), B=${parsedAmountB} (Yocto)`);
+        const minAmountA = parseTokenAmount(min_token_a, tokenAData?.decimals);
+        const minAmountB = parseTokenAmount(min_token_b, tokenBData?.decimals);
 
-        // Calculate dynamic tick range
-        const tickRange = await calculateTickRange(tokenA, tokenB);
+        const balanceA = BigInt(await getFTBalance(tokenA, walletAddress));
+        const balanceB = BigInt(await getFTBalance(tokenB, walletAddress));
+
+        const maxAmountABigInt = BigInt(maxAmountA);
+        const maxAmountBBigInt = BigInt(maxAmountB);
+
+        if (balanceA < maxAmountABigInt) {
+            return res.status(400).json({
+                error: `Insufficient balance for Token A (${tokenAData?.symbol}). Required: ${maxAmountABigInt}, Available: ${balanceA}, Decimal: ${tokenAData?.decimals}`
+            });
+        }
+
+        if (balanceB < maxAmountBBigInt) {
+            return res.status(400).json({
+                error: `Insufficient balance for Token B (${tokenBData?.symbol}). Required: ${maxAmountBBigInt}, Available: ${balanceB}, Decimal: ${tokenBData?.decimals}`
+            });
+        }
 
         const depositStorage = format.parseNearAmount("0.02");
 
@@ -117,7 +143,7 @@ router.get("/", async (req, res) => {
                             methodName: "ft_transfer_call",
                             args: {
                                 receiver_id: VEAX_CONTRACT_ADDRESS,
-                                amount: parsedAmountA,
+                                amount: maxAmountA,
                                 msg: JSON.stringify(["Deposit"])
                             },
                             gas: "200000000000000",
@@ -135,19 +161,19 @@ router.get("/", async (req, res) => {
                             methodName: "ft_transfer_call",
                             args: {
                                 receiver_id: VEAX_CONTRACT_ADDRESS,
-                                amount: parsedAmountB,
+                                amount: maxAmountB,
                                 msg: JSON.stringify([
                                     "Deposit",
                                     {
                                         OpenPosition: {
                                             tokens: [tokenA, tokenB],
-                                            fee_rate: 2,
+                                            fee_rate: feeRate,
                                             position: {
                                                 amount_ranges: [
-                                                    { min: "0", max: parsedAmountA }, // TODO dynamic
-                                                    { min: "0", max: parsedAmountB }  // TODO dynamic
+                                                    { min: minAmountA, max: maxAmountA },
+                                                    { min: minAmountB, max: maxAmountB }
                                                 ],
-                                                ticks_range: [-37, 43]  // TODO dynamic (tick ranges - minTick, maxTick )
+                                                ticks_range: [minTick, maxTick]
                                             }
                                         }
                                     },

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const { getAllTokenMetadata } = require("../rpc-utils/token");
 
 const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
 
@@ -64,15 +65,18 @@ router.get("/", async (req, res) => {
 
         // Fetch metadata in parallel
         const tokenMetadataPromises = tokens.map(async (token) => {
-            const metadata = await fetchTokenMetadata(token.sc_address);
-            return {
-                ...token,
-                name: metadata.name,
-                symbol: metadata.symbol,
-            };
+            if (token.sc_address !== "aurora") {
+                const metadata = await fetchTokenMetadata(token.sc_address);
+                return {
+                    // ...token,
+                    name: metadata.name,
+                    symbol: metadata.symbol,
+                };
+            }
         });
 
         tokens = await Promise.all(tokenMetadataPromises);
+        tokens = tokens.filter(Boolean);
 
         return res.status(200).json({ tokens, total: response.data.result.total });
     } catch (error) {
@@ -83,11 +87,25 @@ router.get("/", async (req, res) => {
 
 router.get("/liquidity-paired", async (req, res) => {
     try {
-        const { tokenAddress } = req.query;
+        const { tokenSymbol } = req.query;
 
-        if (!tokenAddress) {
-            return res.status(400).json({ error: "tokenAddress is required" });
+        if (!tokenSymbol) {
+            return res.status(400).json({ error: "tokenSymbol is required" });
         }
+
+        const allTokens = await getAllTokenMetadata() || [];
+
+        // Find tokens by symbol
+        const tokenData = allTokens.find(token => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase());
+
+        // Validate existence
+        if (!tokenData) {
+            return res.status(400).json({
+                error: `Could not find token for symbol: ${tokenSymbol}`
+            });
+        }
+
+        const tokenAddress = tokenData.sc_address;
 
         const response = await axios.post(
             VEAX_API_URL,
@@ -105,7 +123,19 @@ router.get("/liquidity-paired", async (req, res) => {
             }
         );
 
-        return res.status(200).json(response.data);
+        const pairedTokens = response.data?.result?.tokens || [];
+
+        const enrichedTokens = pairedTokens.map((token) => {
+            const meta = allTokens.find(t => t.sc_address === token.address);
+            return {
+                name: meta?.name || null,
+                symbol: meta?.symbol || null,
+                address: token.address,
+                with_liquidity: token.with_liquidity
+            };
+        });
+
+        return res.status(200).json({ tokens: enrichedTokens });
     } catch (error) {
         console.error("Error fetching liquidity paired tokens:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -114,7 +144,25 @@ router.get("/liquidity-paired", async (req, res) => {
 
 router.get("/price", async (req, res) => {
     try {
-        const { tokenAddress } = req.query;
+        const { tokenSymbol } = req.query;
+
+        if (!tokenSymbol) {
+            return res.status(400).json({ error: "tokenSymbol is required" });
+        }
+
+        const allTokens = await getAllTokenMetadata() || [];
+
+        // Find tokens by symbol
+        const tokenData = allTokens.find(token => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase());
+
+        // Validate existence
+        if (!tokenData) {
+            return res.status(400).json({
+                error: `Could not find token for symbol: ${tokenSymbol}`
+            });
+        }
+
+        const tokenAddress = tokenData.sc_address;
 
         const response = await axios.post(
             VEAX_API_URL,
@@ -145,7 +193,25 @@ router.get("/price", async (req, res) => {
 
 router.get("/historical-price", async (req, res) => {
     try {
-        const { tokenAddress, timestamp } = req.query;
+        const { tokenSymbol, timestamp } = req.query;
+
+        if (!tokenSymbol) {
+            return res.status(400).json({ error: "tokenSymbol is required" });
+        }
+
+        const allTokens = await getAllTokenMetadata() || [];
+
+        // Find tokens by symbol
+        const tokenData = allTokens.find(token => token.symbol?.toLowerCase() === tokenSymbol.toLowerCase());
+
+        // Validate existence
+        if (!tokenData) {
+            return res.status(400).json({
+                error: `Could not find token for symbol: ${tokenSymbol}`
+            });
+        }
+
+        const tokenAddress = tokenData.sc_address;
 
         const response = await axios.post(
             VEAX_API_URL,

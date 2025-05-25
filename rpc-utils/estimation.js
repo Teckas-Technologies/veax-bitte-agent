@@ -7,7 +7,9 @@ async function estimateLiquidityPosition({
     feeRate,
     lowerTick,
     upperTick,
-    amount
+    amount,
+    price,
+    poolExist
 }) {
 
     console.log("DATA: ", tokenA, tokenB, slippageTolerance, feeRate, lowerTick, upperTick, amount)
@@ -26,6 +28,10 @@ async function estimateLiquidityPosition({
         },
         id: 0
     };
+
+    if (!poolExist) {
+        payload.params.price = price;
+    }
 
     try {
         const response = await fetch(VEAX_ESTIMATION_RPC_URL, {

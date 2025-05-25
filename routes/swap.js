@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { fetchTokenDecimals, parseTokenAmount } = require("../utils/utils");
+const { parseTokenAmount } = require("../utils/utils");
 const { estimateSwapExactIn } = require("../utils/swapUtils");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
-const { getFTBalance } = require("../rpc-utils/account");
+const { getFTBalance, viewNearAccount } = require("../rpc-utils/account");
+const { wrap, unWrap } = require("../utils/wrapUtils");
 
 const VEAX_CONTRACT_ADDRESS = "veax.near";
 
@@ -15,13 +16,40 @@ router.get("/", async (req, res) => {
             return res.status(400).json({ error: "fromTokenSymbol, toTokenSymbol, walletAddress and amount are required" });
         }
 
+        if ((fromTokenSymbol.toLowerCase() === "near" && toTokenSymbol.toLowerCase() === "wnear") || (fromTokenSymbol.toLowerCase() === "wnear" && toTokenSymbol.toLowerCase() === "near")) {
+            const isWrapping = fromTokenSymbol.toLowerCase() === "near";
+            const response = isWrapping ? await wrap(walletAddress, amount) : await unWrap(amount);
+
+            if (!response.succes) {
+                return res.status(400).json({ error: response?.message });
+            }
+
+            return res.status(200).json({ transactionData: response.transactions });
+        }
+
         const tokens = await getAllTokenMetadata() || [];
 
-        console.log("Tokens: ", tokens);
+        let fromv2TokenSymbol = fromTokenSymbol;
+        let tov2TokenSymbol = toTokenSymbol;
+
+        let wrapTxs = null;
+        let isUnWrap = null;
+
+        if (fromTokenSymbol.toLowerCase() === "near") {
+            fromv2TokenSymbol = "WNEAR";
+            const response = await wrap(walletAddress, amount);
+            wrapTxs = response.transactions;
+        }
+
+        if (toTokenSymbol.toLowerCase() === "near") {
+            tov2TokenSymbol = "WNEAR";
+            isUnWrap = true;
+            // check at last to see unwrap process
+        }
 
         // Find tokens by symbol
-        const tokenAData = tokens.find(token => token.symbol?.toLowerCase() === fromTokenSymbol.toLowerCase());
-        const tokenBData = tokens.find(token => token.symbol?.toLowerCase() === toTokenSymbol.toLowerCase());
+        const tokenAData = tokens.find(token => token.symbol?.toLowerCase() === fromv2TokenSymbol.toLowerCase());
+        const tokenBData = tokens.find(token => token.symbol?.toLowerCase() === tov2TokenSymbol.toLowerCase());
 
         // Validate existence
         if (!tokenAData || !tokenBData) {
@@ -33,17 +61,8 @@ router.get("/", async (req, res) => {
         const fromTokenAddress = tokenAData.sc_address;
         const toTokenAddress = tokenBData.sc_address;
 
-        console.log("Token A Address:", fromTokenAddress);
-        console.log("Token B Address:", toTokenAddress);
-
-        // Fetch token decimals
-        const decimalsA = await fetchTokenDecimals(fromTokenAddress);
-        const decimalsB = await fetchTokenDecimals(toTokenAddress);
-
-        console.log("AI slippage:", slippage)
-
         let customSlippage;
-        if(slippage !== undefined) {
+        if (slippage !== undefined) {
             customSlippage = slippage
         } else {
             customSlippage = "0.005"
@@ -61,16 +80,28 @@ router.get("/", async (req, res) => {
         const tokenBAmount = estimation?.data?.result?.amount_b_expected;
 
         // Convert to Yocto format
-        const parsedFromTokenAmount = parseTokenAmount(tokenAAmount, decimalsA);
-        const parsedToTokenAmount = parseTokenAmount(tokenBAmount, decimalsB);
+        const parsedFromTokenAmount = parseTokenAmount(tokenAAmount, tokenAData?.decimals);
+        const parsedToTokenAmount = parseTokenAmount(tokenBAmount, tokenBData?.decimals);
 
         const maxAmountBigInt = BigInt(parsedFromTokenAmount);
         const balance = BigInt(await getFTBalance(fromTokenAddress, walletAddress));
 
-        if (balance < maxAmountBigInt) {
-            return res.status(400).json({
-                error: `Insufficient balance for Token A (${tokenAData?.symbol}). Required: ${maxAmountBigInt}, Available: ${balance}, Decimal: ${tokenAData?.decimals}`
-            });
+        if (fromTokenSymbol.toLowerCase() !== "near") {
+            if (balance < maxAmountBigInt) {
+                return res.status(400).json({
+                    error: `Insufficient balance for Token A (${tokenAData?.symbol}). Required: ${maxAmountBigInt}, Available: ${balance}, Decimal: ${tokenAData?.decimals}`
+                });
+            }
+        }
+
+        if (fromTokenSymbol.toLowerCase() === "near") {
+            const response = await viewNearAccount(walletAddress);
+            const nearBalance = BigInt(response?.result?.amount);
+            if (nearBalance < maxAmountBigInt) {
+                return res.status(400).json({
+                    error: `Insufficient balance for Token A (${fromTokenSymbol}). Required: ${maxAmountBigInt}, Available: ${nearBalance}, Decimal: ${tokenAData?.decimals}`
+                });
+            }
         }
 
         const transactionData = [
@@ -105,7 +136,7 @@ router.get("/", async (req, res) => {
                                             token_in: fromTokenAddress,
                                             token_out: toTokenAddress,
                                             amount: parsedFromTokenAmount.toString(),
-                                            amount_limit: parsedToTokenAmount 
+                                            amount_limit: parsedToTokenAmount
                                         }
                                     },
                                     { Withdraw: [fromTokenAddress, "0", null] },
@@ -119,6 +150,16 @@ router.get("/", async (req, res) => {
                 ]
             }
         ]
+
+        if (wrapTxs) {
+            transactionData.unshift(...wrapTxs);
+        }
+
+        if (isUnWrap) {
+            const response = await unWrap(tokenBAmount);
+            const unWrapTxs = response.transactions;
+            transactionData.push(...unWrapTxs);
+        }
 
         return res.status(200).json({ transactionData });
     } catch (error) {

@@ -130,7 +130,7 @@ async function getAllTokenMetadata() {
     const metadataList = await Promise.all(
         tokens.map(async (token) => {
             const scAddress = token?.sc_address;
-            if (!scAddress) {
+            if (!scAddress || scAddress === "aurora") {
                 console.warn("Missing sc_address for token:", token);
                 return null;
             }

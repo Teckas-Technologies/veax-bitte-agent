@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const { getAllTokenMetadata } = require("../rpc-utils/token");
+const { formatPools } = require("../utils/utils");
 
 const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
 
@@ -53,9 +55,10 @@ router.get("/", async (req, res) => {
 
         const { bestPools, riskyPools } = categorizeAndRankPools(response.data?.result?.pools);
 
-        console.log(bestPools[0], bestPools.length, riskyPools[0], riskyPools.length);
+        const formattedBestPools = await formatPools(bestPools);
+        const formattedRiskyPools = await formatPools(riskyPools);
 
-        return res.status(200).json(response.data);
+        return res.status(200).json({ pools: [...formattedBestPools, ...formattedRiskyPools] });
     } catch (error) {
         console.error("Error fetching pools:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -63,11 +66,27 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/by-tokens", async (req, res) => {
-    const { tokenA, tokenB } = req.query;
+    const { tokenASymbol, tokenBSymbol } = req.query;
 
-    if (!tokenA || !tokenB) {
-        return res.status(400).json({ error: "tokenA and tokenB are required" });
+    if (!tokenASymbol || !tokenBSymbol) {
+        return res.status(400).json({ error: "tokenASymbol and tokenBSymbol are required" });
     }
+
+    const tokens = await getAllTokenMetadata() || [];
+
+    // Find tokens by symbol
+    const tokenAData = tokens.find(token => token.symbol?.toLowerCase() === tokenASymbol.toLowerCase());
+    const tokenBData = tokens.find(token => token.symbol?.toLowerCase() === tokenBSymbol.toLowerCase());
+
+    // Validate existence
+    if (!tokenAData || !tokenBData) {
+        return res.status(400).json({
+            error: `Could not find tokens for symbols: ${!tokenAData ? tokenASymbol : ''} ${!tokenBData ? tokenBSymbol : ''}`
+        });
+    }
+
+    const fromTokenAddress = tokenAData.sc_address;
+    const toTokenAddress = tokenBData.sc_address;
 
     try {
         const response = await axios.post(
@@ -77,8 +96,8 @@ router.get("/by-tokens", async (req, res) => {
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 method: "liquidity_pool_by_token_pair",
                 params: {
-                    token_a: tokenA,
-                    token_b: tokenB
+                    token_a: fromTokenAddress,
+                    token_b: toTokenAddress
                 }
             },
             {
@@ -116,11 +135,11 @@ router.get("/best-pools", async (req, res) => {
             }
         );
 
-        const { bestPools, riskyPools } = categorizeAndRankPools(response.data?.result?.pools);
+        const { bestPools } = categorizeAndRankPools(response.data?.result?.pools);
 
-        console.log(bestPools[0], bestPools.length, riskyPools[0], riskyPools.length);
+        const formattedBestPools = await formatPools(bestPools);
 
-        return res.status(200).json({ bestPools: bestPools });
+        return res.status(200).json({ bestPools: formattedBestPools });
     } catch (error) {
         console.error("Error fetching pools:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -145,11 +164,11 @@ router.get("/risky-pools", async (req, res) => {
             }
         );
 
-        const { bestPools, riskyPools } = categorizeAndRankPools(response.data?.result?.pools);
+        const { riskyPools } = categorizeAndRankPools(response.data?.result?.pools);
 
-        console.log(bestPools[0], bestPools.length, riskyPools[0], riskyPools.length);
+        const formattedRiskyPools = await formatPools(riskyPools);
 
-        return res.status(200).json({ riskyPools: riskyPools });
+        return res.status(200).json({ riskyPools: formattedRiskyPools });
     } catch (error) {
         console.error("Error fetching pools:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -183,11 +202,27 @@ router.get("/last-update", async (req, res) => {
 
 router.get("/spot-price", async (req, res) => {
     try {
-        const { tokenA, tokenB } = req.query;
+        const { tokenASymbol, tokenBSymbol } = req.query;
 
-        if (!tokenA || !tokenB) {
-            return res.status(400).json({ error: "tokenA and tokenB are required" });
+        if (!tokenASymbol || !tokenBSymbol) {
+            return res.status(400).json({ error: "tokenASymbol and tokenBSymbol are required" });
         }
+
+        const tokens = await getAllTokenMetadata() || [];
+
+        // Find tokens by symbol
+        const tokenAData = tokens.find(token => token.symbol?.toLowerCase() === tokenASymbol.toLowerCase());
+        const tokenBData = tokens.find(token => token.symbol?.toLowerCase() === tokenBSymbol.toLowerCase());
+
+        // Validate existence
+        if (!tokenAData || !tokenBData) {
+            return res.status(400).json({
+                error: `Could not find tokens for symbols: ${!tokenAData ? tokenASymbol : ''} ${!tokenBData ? tokenBSymbol : ''}`
+            });
+        }
+
+        const fromTokenAddress = tokenAData.sc_address;
+        const toTokenAddress = tokenBData.sc_address;
 
         const response = await axios.post(
             VEAX_API_URL,
@@ -195,7 +230,7 @@ router.get("/spot-price", async (req, res) => {
                 jsonrpc: "2.0",
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 method: "get_pool_spot_price",
-                params: { token_a: tokenA, token_b: tokenB }
+                params: { token_a: fromTokenAddress, token_b: toTokenAddress }
             },
             {
                 headers: {

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { getAllTokenMetadata } = require("../rpc-utils/token");
 
 // Fetch token decimals dynamically
 const fetchTokenDecimals = async (tokenId) => {
@@ -31,147 +32,64 @@ const parseTokenAmount = (amount, decimals) => {
     return BigInt(Math.floor(parseFloat(amount) * 10 ** decimals)).toString();
 };
 
-const getHighestLiquidityFeeRate = (data) => {
-    if (!data || !data.result || !data.result.pool || !data.result.pool.fee_levels) {
-        console.error("Invalid data format");
-        return null;
-    }
+// Convert Yocto format to human-readable token amount
+const formatTokenAmount = (yoctoAmount, decimals) => {
+    const amountBig = BigInt(yoctoAmount);
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const whole = amountBig / divisor;
+    const fraction = amountBig % divisor;
 
-    const feeLevels = data.result.pool.fee_levels;
+    // Pad leading zeros in fractional part based on decimals, then trim trailing zeros
+    const fractionStr = fraction.toString().padStart(decimals, '0').replace(/0+$/, '');
 
-    // Find the fee level with the highest liquidity
-    const highestLiquidityFee = feeLevels.reduce((max, fee) => {
-        return (parseFloat(fee.liquidity) > parseFloat(max.liquidity)) ? fee : max;
-    }, feeLevels[0]);
-
-    return highestLiquidityFee.fee_rate;
+    return fractionStr ? `${whole}.${fractionStr}` : `${whole}`;
 };
 
-// Fetch dynamic tick & amount ranges from Veax API
-const fetchHighLiquidityFeeLevel = async (tokenA, tokenB) => {
-    try {
-        const response = await axios.post(
-            VEAX_API_URL,
-            {
-                jsonrpc: "2.0",
-                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                method: "liquidity_pool_by_token_pair",
-                params: {
-                    token_a: tokenA,
-                    token_b: tokenB
-                }
-            },
-            {
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json"
-                }
-            }
-        );
+// use this in plugin json in pools spec, if need reserve data
+// "reserve_a": {
+//     "type": "string",
+//     "description": "Reserve amount of token A"
+// },
+// "reserve_b": {
+//     "type": "string",
+//     "description": "Reserve amount of token B"
+// },
 
-        console.log("RES: ", response.data)
-
-        const highLiquidutyFeeRate = getHighestLiquidityFeeRate(response.data);
-        return highLiquidutyFeeRate;
-    } catch (error) {
-        console.error("Error fetching tick & amount ranges:", error.message);
-    }
+const formatWithFourDecimals = (value) => {
+    return Number(value).toFixed(4).split("e")[0]
 };
 
+const formatPools = async (pools) => {
+    const tokens = await getAllTokenMetadata() || [];
 
-// ================ TEST Functions starts here ============
+    const tokenMap = Object.fromEntries(tokens.map(token => [token.sc_address, token]));
 
-const VEAX_ESTIMATION_API_URL = "https://veax-estimation-service.veax.com/v1/rpc";
+    const formattedPools = pools.map(pool => {
+        const tokenAMeta = tokenMap[pool.token_a];
+        const tokenBMeta = tokenMap[pool.token_b];
 
-// Fetch dynamic tick & amount ranges from Veax API
-const fetchTickAndAmountRanges = async (tokenA, tokenB, amountA, amountB, feeRate = 2) => {
-    try {
-        const response = await axios.post(
-            VEAX_ESTIMATION_API_URL,
-            {
-                jsonrpc: "2.0",
-                id: "liquidity-position-estimation",
-                method: "estimate_liquidity_position",
-                params: {
-                    token_a: tokenA,
-                    token_b: tokenB,
-                    slippage_tolerance: 0.005, // 0.5% slippage
-                    price: "1", // Default to 1 if not available
-                    amount_a: amountA.toString(),
-                    amount_b: amountB.toString(),
-                    fee_rate: feeRate,
-                    lower_tick: -32,  // Let API return correct values
-                    upper_tick: 47,
-                    skip_incentiviation: true
-                }
-            },
-            { headers: { Accept: "application/json", "Content-Type": "application/json" } }
-        );
-
-        console.log("RES: ", response.data)
-        return response.data
-
-        // const { lower_tick, upper_tick, amount_a, amount_b } = response.data.result;
-
-
-
-        // return {
-        //     lowerTick: lower_tick,
-        //     upperTick: upper_tick,
-        //     amountRanges: [
-        //         { min: "0", max: amount_a.toString() },
-        //         { min: "0", max: amount_b.toString() }
-        //     ]
-        // };
-    } catch (error) {
-        console.error("Error fetching tick & amount ranges:", error.message);
         return {
-            lowerTick: -37,  // Default fallback
-            upperTick: 43,    // Default fallback
-            amountRanges: [
-                { min: "0", max: amountA.toString() },
-                { min: "0", max: amountB.toString() }
-            ]
+            token_a: tokenAMeta?.symbol || pool.token_a,
+            token_a_sc_address: tokenAMeta?.sc_address || pool.token_a,
+            token_a_decimals: tokenAMeta?.decimals,
+            token_b: tokenBMeta?.symbol || pool.token_b,
+            token_b_sc_address: tokenBMeta?.sc_address || pool.token_b,
+            token_b_decimals: tokenBMeta?.decimals,
+            // reserve_a: pool.reserve_a,
+            // reserve_b: pool.reserve_b,
+            spot_price: pool.spot_price,
+            stability: formatWithFourDecimals(pool.stability),
+            total_liquidity: formatWithFourDecimals(pool.totalLiquidity)
         };
-    }
-};
+    });
 
-const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
-
-// Fetch market price using Veax API
-const fetchMarketPrice = async (tokenA, tokenB) => {
-    try {
-        const response = await axios.post(
-            VEAX_API_URL,
-            {
-                jsonrpc: "2.0",
-                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                method: "get_pool_spot_price",
-                params: {
-                    token_a: tokenA,
-                    token_b: tokenB
-                }
-            },
-            { headers: { Accept: "application/json", "Content-Type": "application/json" } }
-        );
-
-        console.log("RES: ", response.data);
-        if (!response.data.result.pool_exist) {
-            return { success: false, data: null, message: "This pair of pool doesn't exist!" }
-        }
-
-        return { success: true, price: response.data.result.prices[0], message: "Fetching market price successfully!" }
-    } catch (error) {
-        console.error("Error fetching market price:", error.message);
-        return { success: false, data: null, message: error.message }
-    }
-};
+    return formattedPools
+}
 
 
 module.exports = {
     fetchTokenDecimals,
     parseTokenAmount,
-    fetchTickAndAmountRanges,
-    fetchMarketPrice,
-    fetchHighLiquidityFeeLevel
+    formatTokenAmount,
+    formatPools
 }
