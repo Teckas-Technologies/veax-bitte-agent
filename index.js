@@ -29,6 +29,14 @@ app.use('/api/positions', positionRouter);
 app.use('/api/balance', balanceRouter);
 
 
+// Assistant routes
+const chatRouter = require('./routes/assistant/chat');
+const historyRouter = require('./routes/assistant/history');
+
+app.use('/api', chatRouter);
+app.use('/api', historyRouter);
+
+
 app.get("/", (req, res) => res.send("Express on Azure"));
 app.get('/.well-known/ai-plugin.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
