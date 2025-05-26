@@ -9,7 +9,7 @@ app.use('public', express.static(path.join(__dirname, 'public')));
 
 const cors = require('cors');
 // app.use(cors({ origin: 'http://localhost:3000' }));
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: '*' })); 
 
 const tokenRouter = require('./routes/tokens');
 const poolRouter = require('./routes/pools');
