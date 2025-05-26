@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
 const { formatPools } = require("../utils/utils");
+const { getLiquidityPercentPerLevel } = require("../rpc-utils/addLiquidity");
 
 const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
 
@@ -34,6 +35,51 @@ function categorizeAndRankPools(pools) {
 
     return { bestPools, riskyPools };
 }
+
+
+function formatTokenAmount(amount, decimals) {
+    const value = Number(amount) / Math.pow(10, decimals);
+    return value.toFixed(4);
+}
+
+function formatPoolForLP(poolData, tokenMetadata) {
+    const { pool } = poolData.result;
+
+    const tokenADecimals = tokenMetadata.find(t => t.sc_address === pool.token_a)?.decimals ?? 24;
+    const tokenBDecimals = tokenMetadata.find(t => t.sc_address === pool.token_b)?.decimals ?? 24;
+
+    const tokenA = tokenMetadata.find(t => t.sc_address === pool.token_a);
+    const tokenB = tokenMetadata.find(t => t.sc_address === pool.token_b);
+
+    const formattedFeeLevels = pool.fee_levels.map(fee => ({
+        fee_rate: Number(fee.fee_rate),
+        amount_a: formatTokenAmount(fee.amount_a, tokenADecimals),
+        amount_b: formatTokenAmount(fee.amount_b, tokenBDecimals),
+        tvl: Number(fee.tvl).toFixed(4),
+        effective_tvl: Number(fee.effective_tvl).toFixed(4),
+        volume_24h: Number(fee.volume_24h).toFixed(4),
+        volume_7d: Number(fee.volume_7d).toFixed(4),
+        fee_24h: Number(fee.fee_24h).toFixed(4),
+        fee_7d: Number(fee.fee_7d).toFixed(4),
+    }));
+
+    return {
+        pool_id: pool.id,
+        token_a: tokenA.symbol,
+        token_b: tokenB.symbol,
+        total_amount_a: formatTokenAmount(pool.total_amount_a, tokenADecimals),
+        total_amount_b: formatTokenAmount(pool.total_amount_b, tokenBDecimals),
+        spot_price: Number(pool.spot_price).toFixed(4),
+        tvl: Number(pool.tvl).toFixed(4),
+        effective_tvl: Number(pool.effective_tvl).toFixed(4),
+        volume_24h: Number(pool.volume_24h).toFixed(4),
+        volume_7d: Number(pool.volume_7d).toFixed(4),
+        lp_fee_24h: Number(pool.lp_fee_24h).toFixed(4),
+        lp_fee_7d: Number(pool.lp_fee_7d).toFixed(4),
+        fee_levels: formattedFeeLevels,
+    };
+}
+
 
 router.get("/", async (req, res) => {
     try {
@@ -108,9 +154,11 @@ router.get("/by-tokens", async (req, res) => {
             }
         );
 
-        console.log("RES: ", response.data)
+        const tokens = await getAllTokenMetadata() || [];
 
-        return res.status(200).json(response.data);
+        const pool = formatPoolForLP(response.data, tokens);
+
+        return res.status(200).json({ pool_details: pool });
     } catch (error) {
         console.error("Error fetching pools:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -240,7 +288,18 @@ router.get("/spot-price", async (req, res) => {
             }
         );
 
-        return res.status(200).json(response.data);
+        if (!response.data?.result?.pool_exist) {
+            return res.status(400).json({ error: `${tokenASymbol}/${tokenBSymbol} pool doesn't exist.` });
+        }
+
+        const feeLevelResult = await getLiquidityPercentPerLevel(fromTokenAddress, toTokenAddress);
+        const percents = feeLevelResult.percents;
+
+        const maxIndex = percents.indexOf(Math.max(...percents));
+
+        const spotPrice = response.data?.result?.prices[maxIndex];
+
+        return res.status(200).json({ spot_price: spotPrice });
     } catch (error) {
         console.error("Error fetching pool spot price:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });

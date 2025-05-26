@@ -250,105 +250,86 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
-                                            "type": "string",
-                                            "example": "2.0",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
-                                            "type": "object",
-                                            "properties": {
-                                                "liquidity_positions": {
-                                                    "type": "array",
-                                                    "description": "List of user liquidity positions",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "tokens": {
-                                                                "type": "array",
-                                                                "description": "Tokens in the liquidity position",
-                                                                "items": {
-                                                                    "type": "object",
-                                                                    "properties": {
-                                                                        "contract": {
-                                                                            "type": "string",
-                                                                            "description": "Token contract address"
-                                                                        },
-                                                                        "initial_liquidity": {
-                                                                            "type": "string",
-                                                                            "description": "Initial liquidity amount"
-                                                                        },
-                                                                        "current_liquidity": {
-                                                                            "type": "string",
-                                                                            "description": "Current liquidity amount"
-                                                                        },
-                                                                        "reward": {
-                                                                            "type": "string",
-                                                                            "description": "Current reward amount"
-                                                                        },
-                                                                        "total_reward": {
-                                                                            "type": "string",
-                                                                            "description": "Total reward accumulated"
-                                                                        },
-                                                                        "price_change": {
-                                                                            "type": "string",
-                                                                            "description": "Percentage change in token price"
-                                                                        },
-                                                                        "code": {
-                                                                            "type": "string",
-                                                                            "description": "The symbol of the token"
-                                                                        }
-                                                                    }
+                                        "positions": {
+                                            "type": "array",
+                                            "description": "List of user liquidity positions",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "tokens": {
+                                                        "type": "array",
+                                                        "description": "Tokens in the liquidity position",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "contract": {
+                                                                    "type": "string",
+                                                                    "description": "Token contract address"
+                                                                },
+                                                                "initial_liquidity": {
+                                                                    "type": "string",
+                                                                    "description": "Initial liquidity amount"
+                                                                },
+                                                                "current_liquidity": {
+                                                                    "type": "string",
+                                                                    "description": "Current liquidity amount"
+                                                                },
+                                                                "reward": {
+                                                                    "type": "string",
+                                                                    "description": "Current reward amount"
+                                                                },
+                                                                "total_reward": {
+                                                                    "type": "string",
+                                                                    "description": "Total reward accumulated"
+                                                                },
+                                                                "price_change": {
+                                                                    "type": "string",
+                                                                    "description": "Percentage change in token price"
                                                                 }
-                                                            },
-                                                            "id": {
-                                                                "type": "string",
-                                                                "description": "Liquidity position ID"
-                                                            },
-                                                            "account_id": {
-                                                                "type": "string",
-                                                                "description": "Account associated with the liquidity position"
-                                                            },
-                                                            "pool_share": {
-                                                                "type": "string",
-                                                                "description": "User's share in the liquidity pool"
-                                                            },
-                                                            "fee": {
-                                                                "type": "string",
-                                                                "description": "Fee percentage"
-                                                            },
-                                                            "price_range": {
-                                                                "type": "object",
-                                                                "description": "Range of prices for liquidity",
-                                                                "properties": {
-                                                                    "from": {
-                                                                        "type": "string",
-                                                                        "description": "Minimum price in range"
-                                                                    },
-                                                                    "to": {
-                                                                        "type": "string",
-                                                                        "description": "Maximum price in range"
-                                                                    }
-                                                                }
-                                                            },
-                                                            "created_at": {
-                                                                "type": "integer",
-                                                                "description": "Timestamp when the liquidity position was created"
-                                                            },
-                                                            "tx_hash": {
-                                                                "type": "string",
-                                                                "description": "Transaction hash of the liquidity action"
-                                                            },
-                                                            "liquidity": {
-                                                                "type": "string",
-                                                                "description": "Total liquidity in the position"
                                                             }
                                                         }
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "Liquidity position ID"
+                                                    },
+                                                    "account_id": {
+                                                        "type": "string",
+                                                        "description": "Account associated with the liquidity position"
+                                                    },
+                                                    "pool_share": {
+                                                        "type": "string",
+                                                        "description": "User's share in the liquidity pool"
+                                                    },
+                                                    "fee": {
+                                                        "type": "string",
+                                                        "description": "Fee percentage"
+                                                    },
+                                                    "price_range": {
+                                                        "type": "object",
+                                                        "description": "Range of prices for liquidity",
+                                                        "properties": {
+                                                            "from": {
+                                                                "type": "string",
+                                                                "description": "Minimum price in range"
+                                                            },
+                                                            "to": {
+                                                                "type": "string",
+                                                                "description": "Maximum price in range"
+                                                            }
+                                                        }
+                                                    },
+                                                    "created_at": {
+                                                        "type": "integer",
+                                                        "description": "Timestamp when the liquidity position was created"
+                                                    },
+                                                    "tx_hash": {
+                                                        "type": "string",
+                                                        "description": "Transaction hash of the liquidity action"
+                                                    },
+                                                    "liquidity": {
+                                                        "type": "string",
+                                                        "description": "Total liquidity in the position"
                                                     }
                                                 }
                                             }
@@ -571,6 +552,10 @@
                                                     "symbol": {
                                                         "type": "string",
                                                         "description": "The symbol of the token"
+                                                    },
+                                                    "address": {
+                                                        "type": "string",
+                                                        "description": "The address of the token"
                                                     }
                                                 }
                                             }
@@ -711,27 +696,12 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
-                                            "type": "string",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
+                                        "prices": {
                                             "type": "object",
-                                            "description": "Contains price details of tokens",
-                                            "properties": {
-                                                "prices": {
-                                                    "type": "object",
-                                                    "description": "Key-value pair of token addresses and their prices",
-                                                    "additionalProperties": {
-                                                        "type": "string",
-                                                        "description": "Price of the token"
-                                                    }
-                                                }
+                                            "description": "Key-value pair of token addresses and their prices",
+                                            "additionalProperties": {
+                                                "type": "string",
+                                                "description": "Price of the token"
                                             }
                                         }
                                     }
@@ -791,27 +761,12 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
-                                            "type": "string",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
+                                        "prices": {
                                             "type": "object",
-                                            "description": "Contains price details of tokens",
-                                            "properties": {
-                                                "prices": {
-                                                    "type": "object",
-                                                    "description": "Key-value pair of token addresses and their prices",
-                                                    "additionalProperties": {
-                                                        "type": "string",
-                                                        "description": "Price of the token"
-                                                    }
-                                                }
+                                            "description": "Key-value pair of token addresses and their prices",
+                                            "additionalProperties": {
+                                                "type": "string",
+                                                "description": "Price of the token"
                                             }
                                         }
                                     }
@@ -979,130 +934,99 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
-                                            "type": "string",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
+                                        "pool_details": {
                                             "type": "object",
                                             "properties": {
-                                                "pool": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "description": "Unique identifier for the pool"
-                                                        },
-                                                        "token_a": {
-                                                            "type": "string",
-                                                            "description": "First token in the pool"
-                                                        },
-                                                        "token_b": {
-                                                            "type": "string",
-                                                            "description": "Second token in the pool"
-                                                        },
-                                                        "total_amount_a": {
-                                                            "type": "string",
-                                                            "description": "Total amount of token A in the pool"
-                                                        },
-                                                        "total_amount_b": {
-                                                            "type": "string",
-                                                            "description": "Total amount of token B in the pool"
-                                                        },
-                                                        "spot_price": {
-                                                            "type": "string",
-                                                            "description": "Current spot price of the pool"
-                                                        },
-                                                        "tvl": {
-                                                            "type": "string",
-                                                            "description": "Total value locked in the pool"
-                                                        },
-                                                        "effective_tvl": {
-                                                            "type": "string",
-                                                            "description": "Effective total value locked in the pool"
-                                                        },
-                                                        "volume_24h": {
-                                                            "type": "string",
-                                                            "description": "Trading volume in the last 24 hours"
-                                                        },
-                                                        "volume_7d": {
-                                                            "type": "string",
-                                                            "description": "Trading volume in the last 7 days"
-                                                        },
-                                                        "fee_levels": {
-                                                            "type": "array",
-                                                            "description": "Different fee levels in the pool",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "amount_a": {
-                                                                        "type": "string",
-                                                                        "description": "Amount of token A at this fee level"
-                                                                    },
-                                                                    "amount_b": {
-                                                                        "type": "string",
-                                                                        "description": "Amount of token B at this fee level"
-                                                                    },
-                                                                    "fee_rate": {
-                                                                        "type": "string",
-                                                                        "description": "Fee rate applied at this level"
-                                                                    },
-                                                                    "tvl": {
-                                                                        "type": "string",
-                                                                        "description": "Total value locked at this fee level"
-                                                                    },
-                                                                    "liquidity": {
-                                                                        "type": "string",
-                                                                        "description": "Liquidity available at this fee level"
-                                                                    },
-                                                                    "effective_tvl": {
-                                                                        "type": "string",
-                                                                        "description": "Effective total value locked at this fee level"
-                                                                    },
-                                                                    "volume_24h": {
-                                                                        "type": "string",
-                                                                        "description": "24-hour trading volume at this fee level"
-                                                                    },
-                                                                    "volume_delta_24h": {
-                                                                        "type": "string",
-                                                                        "description": "Change in volume in the last 24 hours"
-                                                                    },
-                                                                    "volume_7d": {
-                                                                        "type": "string",
-                                                                        "description": "7-day trading volume at this fee level"
-                                                                    },
-                                                                    "volume_delta_7d": {
-                                                                        "type": "string",
-                                                                        "description": "Change in volume in the last 7 days"
-                                                                    },
-                                                                    "fee_24h": {
-                                                                        "type": "string",
-                                                                        "description": "Total fees collected in the last 24 hours"
-                                                                    },
-                                                                    "fee_delta_24h": {
-                                                                        "type": "string",
-                                                                        "description": "Change in fees collected in the last 24 hours"
-                                                                    },
-                                                                    "fee_7d": {
-                                                                        "type": "string",
-                                                                        "description": "Total fees collected in the last 7 days"
-                                                                    },
-                                                                    "fee_delta_7d": {
-                                                                        "type": "string",
-                                                                        "description": "Change in fees collected in the last 7 days"
-                                                                    }
-                                                                }
-                                                            }
-                                                        },
-                                                        "liquidities": {
-                                                            "type": "array",
-                                                            "description": "List of liquidities available in the pool",
-                                                            "items": {
-                                                                "type": "string"
+                                                "pool_id": {
+                                                    "type": "integer",
+                                                    "description": "Unique ID of the pool"
+                                                },
+                                                "token_a": {
+                                                    "type": "string",
+                                                    "description": "First token in the pool"
+                                                },
+                                                "token_b": {
+                                                    "type": "string",
+                                                    "description": "Second token in the pool"
+                                                },
+                                                "total_amount_a": {
+                                                    "type": "string",
+                                                    "description": "Total amount of token A"
+                                                },
+                                                "total_amount_b": {
+                                                    "type": "string",
+                                                    "description": "Total amount of token B"
+                                                },
+                                                "spot_price": {
+                                                    "type": "string",
+                                                    "description": "Spot price of the pool"
+                                                },
+                                                "tvl": {
+                                                    "type": "string",
+                                                    "description": "Total value locked"
+                                                },
+                                                "effective_tvl": {
+                                                    "type": "string",
+                                                    "description": "Effective total value locked"
+                                                },
+                                                "volume_24h": {
+                                                    "type": "string",
+                                                    "description": "24-hour trading volume"
+                                                },
+                                                "volume_7d": {
+                                                    "type": "string",
+                                                    "description": "7-day trading volume"
+                                                },
+                                                "lp_fee_24h": {
+                                                    "type": "string",
+                                                    "description": "Liquidity provider fees in 24h"
+                                                },
+                                                "lp_fee_7d": {
+                                                    "type": "string",
+                                                    "description": "Liquidity provider fees in 7d"
+                                                },
+                                                "fee_levels": {
+                                                    "type": "array",
+                                                    "description": "Different fee levels in the pool",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "fee_rate": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "description": "Fee rate applied"
+                                                            },
+                                                            "amount_a": {
+                                                                "type": "string",
+                                                                "description": "Amount of token A"
+                                                            },
+                                                            "amount_b": {
+                                                                "type": "string",
+                                                                "description": "Amount of token B"
+                                                            },
+                                                            "tvl": {
+                                                                "type": "string",
+                                                                "description": "TVL at this fee level"
+                                                            },
+                                                            "effective_tvl": {
+                                                                "type": "string",
+                                                                "description": "Effective TVL at this fee level"
+                                                            },
+                                                            "volume_24h": {
+                                                                "type": "string",
+                                                                "description": "24-hour volume"
+                                                            },
+                                                            "volume_7d": {
+                                                                "type": "string",
+                                                                "description": "7-day volume"
+                                                            },
+                                                            "fee_24h": {
+                                                                "type": "string",
+                                                                "description": "Fees in 24 hours"
+                                                            },
+                                                            "fee_7d": {
+                                                                "type": "string",
+                                                                "description": "Fees in 7 days"
                                                             }
                                                         }
                                                     }
@@ -1166,32 +1090,9 @@
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "jsonrpc": {
+                                        "spot_price": {
                                             "type": "string",
-                                            "description": "JSON-RPC version"
-                                        },
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "description": "Unique request identifier"
-                                        },
-                                        "result": {
-                                            "type": "object",
-                                            "description": "Contains price details and pool existence status",
-                                            "properties": {
-                                                "prices": {
-                                                    "type": "array",
-                                                    "description": "List of token prices",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "description": "Token price value"
-                                                    }
-                                                },
-                                                "pool_exist": {
-                                                    "type": "boolean",
-                                                    "description": "Indicates whether the pool exists"
-                                                }
-                                            }
+                                            "description": "The spot price of the pool"
                                         }
                                     }
                                 }

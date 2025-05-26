@@ -71,6 +71,7 @@ router.get("/", async (req, res) => {
                     // ...token,
                     name: metadata.name,
                     symbol: metadata.symbol,
+                    address: token?.sc_address
                 };
             }
         });
@@ -184,7 +185,7 @@ router.get("/price", async (req, res) => {
             }
         );
 
-        return res.status(200).json(response.data);
+        return res.status(200).json(response.data?.result);
     } catch (error) {
         console.error("Error fetching token current prices:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -232,7 +233,7 @@ router.get("/historical-price", async (req, res) => {
             }
         );
 
-        return res.status(200).json(response.data);
+        return res.status(200).json(response.data?.result);
     } catch (error) {
         console.error("Error fetching token historical prices:", error.response?.data || error.message);
         return res.status(500).json({ error: "Internal Server Error" });
