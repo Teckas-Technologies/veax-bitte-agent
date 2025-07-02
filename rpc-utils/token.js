@@ -1,3 +1,5 @@
+const { VEAX_MAINNET_URL } = require("../utils/constants");
+
 const VEAX_POOL_RPC_URL = 'https://veax-liquidity-pool.veax.com/v1/rpc';
 
 async function getTokenCurrentPrices(tokenAddresses) {
@@ -79,8 +81,6 @@ async function getTokensList({
 }
 
 async function getFTMetadata(tokenId) {
-    const url = 'https://rpc.mainnet.near.org';
-
     const payload = {
         jsonrpc: "2.0",
         id: "1",
@@ -95,7 +95,7 @@ async function getFTMetadata(tokenId) {
     };
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch(VEAX_MAINNET_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

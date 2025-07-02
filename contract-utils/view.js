@@ -1,5 +1,5 @@
 const { providers } = require("near-api-js");
-const VEAX_MAINNET_URL = 'https://rpc.mainnet.near.org/';
+const { VEAX_MAINNET_URL } = require("../utils/constants");
 
 const viewMethod = async ({ contractId, method, args = {} }) => {
     const provider = new providers.JsonRpcProvider({ url: VEAX_MAINNET_URL });

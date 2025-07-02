@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const { parseTokenAmount } = require("../utils/utils");
-const { estimateSwapExactIn } = require("../utils/swapUtils");
+const { estimateSwapExactIn, getUnregisteredTokens } = require("../utils/swapUtils");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
 const { getFTBalance, viewNearAccount } = require("../rpc-utils/account");
 const { wrap, unWrap } = require("../utils/wrapUtils");
+const { DEFAULT_GAS, MIN_GAS, DEFAULT_TRANSFER_GAS_FOR_SWAP } = require("../constants/liquidity");
 
 const VEAX_CONTRACT_ADDRESS = "veax.near";
 
@@ -61,6 +62,12 @@ router.get("/", async (req, res) => {
         const fromTokenAddress = tokenAData.sc_address;
         const toTokenAddress = tokenBData.sc_address;
 
+        const tokenContracts = [fromTokenAddress, toTokenAddress];
+
+        const unregisteredTokenContracts = await getUnregisteredTokens(walletAddress, tokenContracts);
+
+        const isTokensRegistered = !unregisteredTokenContracts.length;
+
         let customSlippage;
         if (slippage !== undefined) {
             customSlippage = slippage
@@ -72,7 +79,7 @@ router.get("/", async (req, res) => {
 
         console.log("Estimation: ", estimation);
 
-        if (!estimation) {
+        if (!estimation || !estimation?.success) {
             return res.status(400).json({ error: "Swap estimation has been failed" });
         }
 
@@ -104,20 +111,42 @@ router.get("/", async (req, res) => {
             }
         }
 
+        const deposit = estimation.data?.result?.storage_cost
+
+        let storageDeposit = BigInt('0');
+
+        if (!isTokensRegistered) {
+            storageDeposit += BigInt(deposit?.register_token || '0') * BigInt(unregisteredTokenContracts.length);
+        }
+
+        const ACTIONS_SWAP_VEAX_CONTRACT = [
+            {
+                type: "FunctionCall",
+                params: {
+                    methodName: "storage_deposit",
+                    args: { account_id: walletAddress, registration_only: false },
+                    gas: isTokensRegistered ? DEFAULT_GAS : MIN_GAS,
+                    deposit: storageDeposit.toString()
+                }
+            }
+        ]
+
+        if (!isTokensRegistered) {
+            ACTIONS_SWAP_VEAX_CONTRACT.push({
+                type: "FunctionCall",
+                params: {
+                    methodName: "register_tokens",
+                    args: { token_ids: unregisteredTokenContracts },
+                    gas: MIN_GAS,
+                    deposit: "1"
+                }
+            })
+        }
+
         const transactionData = [
             {
                 receiverId: VEAX_CONTRACT_ADDRESS,
-                actions: [
-                    {
-                        type: "FunctionCall",
-                        params: {
-                            methodName: "storage_deposit",
-                            args: { account_id: walletAddress, registration_only: false },
-                            gas: "30000000000000",
-                            deposit: "0"
-                        }
-                    }
-                ]
+                actions: ACTIONS_SWAP_VEAX_CONTRACT
             },
             {
                 receiverId: fromTokenAddress,
@@ -143,7 +172,7 @@ router.get("/", async (req, res) => {
                                     { Withdraw: [toTokenAddress, "0", null] }
                                 ])
                             },
-                            gas: "200000000000000",
+                            gas: DEFAULT_TRANSFER_GAS_FOR_SWAP,
                             deposit: "1",
                         }
                     }

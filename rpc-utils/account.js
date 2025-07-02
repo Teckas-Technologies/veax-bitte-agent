@@ -1,4 +1,4 @@
-const VEAX_MAINNET_URL = 'https://rpc.mainnet.near.org/';
+const { VEAX_MAINNET_URL } = require("../utils/constants");
 
 async function viewNearAccount(accountId) {
 

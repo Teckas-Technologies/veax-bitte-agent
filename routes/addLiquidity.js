@@ -7,12 +7,14 @@ const { formatSlippage, calculateEqualTicks } = require("../utils/liquidityUtils
 const { estimateLiquidityPosition } = require("../rpc-utils/estimation");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
 const { getFTBalance } = require("../rpc-utils/account");
+const { getUnregisteredTokens } = require("../utils/swapUtils");
+const { DEFAULT_GAS, MIN_GAS } = require("../constants/liquidity");
 
 const VEAX_CONTRACT_ADDRESS = "veax.near";
 
 router.get("/", async (req, res) => {
     try {
-        const { tokenSymbolA, tokenSymbolB, walletAddress, amount } = req.query;
+        const { tokenSymbolA, tokenSymbolB, walletAddress, amount, feeTier = "" } = req.query;
 
         if (!tokenSymbolA || !tokenSymbolB) {
             return res.status(400).json({ error: "tokenA and tokenB are required" });
@@ -51,9 +53,14 @@ router.get("/", async (req, res) => {
 
         const feeLevelResult = await getLiquidityPercentPerLevel(tokenA, tokenB);
         const percents = feeLevelResult.percents;
+        
+        const feePercents = [0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28];
+        const convertedFeeTier = feeTier.replace("%", "");
 
         const feeLevels = [1, 2, 4, 8, 16, 32, 64, 128];
-        const maxIndex = percents.indexOf(Math.max(...percents));
+        // const maxIndex = percents.indexOf(Math.max(...percents));
+        const selectedIndex = feePercents.indexOf(parseFloat(convertedFeeTier));
+        const maxIndex = selectedIndex !== -1 ? selectedIndex : percents.indexOf(Math.max(...percents));
 
         const feeRate = feeLevels[maxIndex];
         let price = result.prices[maxIndex];  // spot price
@@ -110,29 +117,47 @@ router.get("/", async (req, res) => {
 
         const depositStorage = format.parseNearAmount("0.02");
 
+        const tokenContracts = [tokenA, tokenB];
+
+        const unregisteredTokenContracts = await getUnregisteredTokens(walletAddress, tokenContracts);
+
+        const isTokensRegistered = !unregisteredTokenContracts.length;
+
+        const deposit = estimation?.storage_cost
+
+        let storageDeposit = BigInt(deposit?.open_position || '0');
+        // if (!accountHasDeposit) storageDeposit += BigInt(deposit?.init_account || '0');
+        if (!isTokensRegistered) storageDeposit += BigInt(deposit?.register_token || '0') * BigInt(unregisteredTokenContracts.length);
+        if (!result.pool_exist) storageDeposit += BigInt(deposit?.create_pool || '0');
+
+        const ACTIONS_ADD_LIQUIDITY_VEAX_CONTRACT = [
+            {
+                type: "FunctionCall",
+                params: {
+                    methodName: "storage_deposit",
+                    args: { account_id: walletAddress, registration_only: false },
+                    gas: isTokensRegistered ? DEFAULT_GAS : MIN_GAS,
+                    deposit: storageDeposit.toString(),
+                }
+            }
+        ]
+
+        if (!isTokensRegistered) {
+            ACTIONS_ADD_LIQUIDITY_VEAX_CONTRACT.push({
+                type: "FunctionCall",
+                params: {
+                    methodName: "register_tokens",
+                    args: { token_ids: unregisteredTokenContracts },
+                    gas: MIN_GAS,
+                    deposit: "1"
+                }
+            })
+        }
+
         const transactionData = [
             {
                 receiverId: VEAX_CONTRACT_ADDRESS,
-                actions: [
-                    {
-                        type: "FunctionCall",
-                        params: {
-                            methodName: "storage_deposit",
-                            args: { account_id: walletAddress, registration_only: false },
-                            gas: "30000000000000",
-                            deposit: depositStorage,
-                        }
-                    },
-                    {
-                        type: "FunctionCall",
-                        params: {
-                            methodName: "register_tokens",
-                            args: { token_ids: [tokenA, tokenB] },
-                            gas: "200000000000000",
-                            deposit: "1",
-                        }
-                    }
-                ]
+                actions: ACTIONS_ADD_LIQUIDITY_VEAX_CONTRACT
             },
             {
                 receiverId: tokenA,

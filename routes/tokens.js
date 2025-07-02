@@ -2,12 +2,13 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
+const { VEAX_MAINNET_URL } = require("../utils/constants");
 
 const VEAX_API_URL = "https://veax-liquidity-pool.veax.com/v1/rpc";
 
 const fetchTokenMetadata = async (tokenId) => {
     try {
-        const response = await axios.post(`https://rpc.mainnet.near.org`, {
+        const response = await axios.post(`${VEAX_MAINNET_URL}`, {
             jsonrpc: "2.0",
             id: "1",
             method: "query",
