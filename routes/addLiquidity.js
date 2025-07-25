@@ -3,7 +3,7 @@ const router = express.Router();
 const { format } = require("near-api-js").utils;
 const { parseTokenAmount } = require("../utils/utils");
 const { getPoolSpotPrice, getLiquidityPercentPerLevel, getPoolLeverage } = require("../rpc-utils/addLiquidity");
-const { formatSlippage, calculateEqualTicks } = require("../utils/liquidityUtils");
+const { formatSlippage, calculateEqualTicks, calculateSslTicks } = require("../utils/liquidityUtils");
 const { estimateLiquidityPosition } = require("../rpc-utils/estimation");
 const { getAllTokenMetadata } = require("../rpc-utils/token");
 const { getFTBalance } = require("../rpc-utils/account");
@@ -49,7 +49,9 @@ router.get("/", async (req, res) => {
         //     return res.status(400).json({ error: "Pool doesn't exist." });
         // }
 
-        const slippage = await formatSlippage("0.5");
+        const isSsd = false;
+
+        const slippage = isSsd ? 0 : await formatSlippage("0.5");
 
         const feeLevelResult = await getLiquidityPercentPerLevel(tokenA, tokenB);
         const percents = feeLevelResult.percents;
@@ -76,13 +78,21 @@ router.get("/", async (req, res) => {
             leverage = leverageResult?.leverages[maxIndex];
         }
 
-        const { minTick, maxTick } = await calculateEqualTicks({ aDecimals: tokenBData?.decimals, bDecimals: tokenAData?.decimals, price: price, leverage });
+        const { minTick, maxTick } = await calculateSslTicks({ 
+            aDecimals: tokenAData?.decimals,
+            bDecimals: tokenBData?.decimals,
+            price: price,
+            ratioType: "left_side",
+            leverage
+        })
+
+        // const { minTick, maxTick } = await calculateEqualTicks({ aDecimals: tokenBData?.decimals, bDecimals: tokenAData?.decimals, price: price, leverage });
 
         console.log("TICKS: ", minTick, maxTick)
 
-        const estimation = await estimateLiquidityPosition({ tokenB, tokenA, slippageTolerance: slippage, feeRate, lowerTick: minTick, upperTick: maxTick, amount, price, poolExist: result?.pool_exist });
+        const estimation = await estimateLiquidityPosition({ tokenB, tokenA, slippageTolerance: slippage, feeRate, lowerTick: minTick, upperTick: maxTick, amount, price, poolExist: result?.pool_exist, isSsd: "left_side" });
 
-        // console.log("Estimation: ", estimation);
+        console.log("Estimation: ", estimation);
 
         if (!estimation) {
             return res.status(400).json({ error: "Add liquidity estimation has been failed" });

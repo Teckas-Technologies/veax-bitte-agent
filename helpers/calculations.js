@@ -23,6 +23,15 @@ const ratioToMaxPrice = (price, ratio, leverage) =>
 const ratioToMinPrice = (maxPrice, leverage) =>
     maxPrice * ((1 - 1 / leverage) ** 4);
 
+const tickToPrice = (tick) => (1.0001 ** tick);
+
+// SSL 100% - 0%
+const getLeftSslMinTick = (price) => Math.ceil(mathLog(price, 1.0001));
+const getLeftSslMaxTick = (minTick, leverage) => minTick - Math.round(4 * mathLog(1 - 1 / leverage, 1.0001));
+
+// SSL 0% - 100%
+const getRightSslMaxTick = (price) => Math.floor(mathLog(price, 1.0001));
+const getRightSslMinTick = (maxTick, leverage) => maxTick + Math.round(4 * mathLog(1 - 1 / leverage, 1.0001));
 
 module.exports = {
     formatOnePrice,
@@ -32,5 +41,10 @@ module.exports = {
     priceToTickFloor,
     priceToTickCeil,
     ratioToMinPrice,
-    ratioToMaxPrice
+    ratioToMaxPrice,
+    tickToPrice,
+    getLeftSslMinTick,
+    getLeftSslMaxTick,
+    getRightSslMaxTick,
+    getRightSslMinTick
 }

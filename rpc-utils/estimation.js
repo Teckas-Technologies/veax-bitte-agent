@@ -9,25 +9,49 @@ async function estimateLiquidityPosition({
     upperTick,
     amount,
     price,
-    poolExist
+    poolExist,
+    isSsd
 }) {
 
     console.log("DATA: ", tokenA, tokenB, slippageTolerance, feeRate, lowerTick, upperTick, amount)
 
+    const params = {
+        token_a: tokenA,
+        token_b: tokenB,
+        slippage_tolerance: slippageTolerance,
+        fee_rate: feeRate,
+        lower_tick: lowerTick,
+        upper_tick: upperTick,
+    };
+
+    if (isSsd === "left_side") {
+        console.log("Left")
+        params.amount_b = amount;
+    } else {
+        params.amount_a = amount;
+    }
+
     const payload = {
         jsonrpc: "2.0",
         method: "estimate_liquidity_position",
-        params: {
-            token_a: tokenA,
-            token_b: tokenB,
-            slippage_tolerance: slippageTolerance,
-            fee_rate: feeRate,
-            lower_tick: lowerTick,
-            upper_tick: upperTick,
-            amount_a: amount
-        },
+        params,
         id: 0
     };
+
+    // const payload = {
+    //     jsonrpc: "2.0",
+    //     method: "estimate_liquidity_position",
+    //     params: {
+    //         token_a: tokenA,
+    //         token_b: tokenB,
+    //         slippage_tolerance: slippageTolerance,
+    //         fee_rate: feeRate,
+    //         lower_tick: lowerTick,
+    //         upper_tick: upperTick,
+    //         amount_a: amount
+    //     },
+    //     id: 0
+    // };
 
     if (!poolExist) {
         payload.params.price = price;
@@ -47,6 +71,8 @@ async function estimateLiquidityPosition({
         }
 
         const result = await response.json();
+
+        console.log("Payload: ", payload);
 
         console.log("RES:", result)
 

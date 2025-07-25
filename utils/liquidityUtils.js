@@ -1,5 +1,5 @@
 const { FULL_RANGE_MIN_VALUE, FULL_RANGE_MAX_VALUE, MIN_TICK, MAX_TICK } = require("../constants/liquidity");
-const { formatOnePrice, userToNativePrice, priceToTickNew, ratioToMaxPrice, nativeToUserPrice, ratioToMinPrice } = require("../helpers/calculations");
+const { formatOnePrice, userToNativePrice, priceToTickNew, ratioToMaxPrice, nativeToUserPrice, ratioToMinPrice, getLeftSslMinTick, getLeftSslMaxTick, getRightSslMaxTick, getRightSslMinTick, tickToPrice } = require("../helpers/calculations");
 
 async function formatSlippage(slippage) {
     // 0.02 = 2% | 0.01 = 1% | 0.005 = 0.5% | 0.001 = 0.1% Slippage
@@ -56,7 +56,49 @@ async function calculateEqualTicks({ aDecimals, bDecimals, price: priceRaw, leve
     };
 }
 
+async function calculateSslTicks({ aDecimals, bDecimals, price: priceRaw, ratioType, leverage }) {
+    const isLeft = ratioType === "left_side";
+    const isRight = ratioType === "right_side";
+    const price = formatOnePrice(priceRaw, isRight);
+    const nativePrice = userToNativePrice(price, aDecimals, bDecimals);
+    const priceTick = priceToTickNew(nativePrice);
+
+    let maxTick;
+    let minTick;
+
+    if (isLeft) {
+        minTick = getLeftSslMinTick(nativePrice);
+        maxTick = getLeftSslMaxTick(minTick, leverage);
+    } else {
+        maxTick = getRightSslMaxTick(nativePrice);
+        minTick = getRightSslMinTick(maxTick, leverage);
+    }
+
+    const minPriceNative = tickToPrice(minTick);
+    const minPrice = nativeToUserPrice(minPriceNative, aDecimals, bDecimals);
+    const maxPriceNative = tickToPrice(maxTick);
+    const maxPrice = nativeToUserPrice(maxPriceNative, aDecimals, bDecimals);
+    const minFormat = minPrice.toString();
+    const maxFormat = maxPrice.toString();
+
+    const isRightFullRange = isRight && (leverage === 1 || minTick < MIN_TICK);
+    const isLeftFullRange = isLeft && (leverage === 1 || maxTick > MAX_TICK);
+
+    const result = {
+        minPrice: isRightFullRange ? FULL_RANGE_MIN_VALUE : minPrice.toString(),
+        maxPrice: isLeftFullRange ? FULL_RANGE_MAX_VALUE : maxPrice.toString(),
+        minFormat: isRightFullRange ? FULL_RANGE_MIN_VALUE : minFormat,
+        maxFormat: isLeftFullRange ? FULL_RANGE_MAX_VALUE : maxFormat,
+        minTick: isRightFullRange ? MIN_TICK : minTick,
+        maxTick: isLeftFullRange ? MAX_TICK : maxTick,
+        priceTick,
+    };
+
+    return result;
+};
+
 module.exports = {
     formatSlippage,
-    calculateEqualTicks
+    calculateEqualTicks,
+    calculateSslTicks
 }
